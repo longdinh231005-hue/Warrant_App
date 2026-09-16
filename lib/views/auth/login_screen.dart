@@ -78,7 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // ── Welcome text ────────────────────────────────────
                 const Text(
-                  'Welcome back',
+                  'Chào mừng trở lại',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -88,14 +88,14 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Sign in to manage your warranties',
+                  'Đăng nhập để quản lý bảo hành của bạn',
                   style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 32),
 
                 // ── Email / Phone field ─────────────────────────────
                 CustomTextField(
-                  label: 'Phone Number or Email',
+                  label: 'Số điện thoại hoặc Email',
                   hintText: 'alex.morgan@email.com',
                   prefixIcon: Icons.mail_outline_rounded,
                   keyboardType: TextInputType.emailAddress,
@@ -111,8 +111,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // ── Password field ──────────────────────────────────
                 CustomTextField(
-                  label: 'Password',
-                  hintText: 'Enter your password',
+                  label: 'Mật khẩu',
+                  hintText: 'Nhập mật khẩu của bạn',
                   prefixIcon: Icons.lock_outline_rounded,
                   obscureText: _obscurePassword,
                   controller: _passwordCtrl,
@@ -146,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                     child: const Text(
-                      'FORGOT PASSWORD?',
+                      'QUÊN MẬT KHẨU?',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w700,
@@ -170,7 +170,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('LOGIN'),
+                      : const Text('ĐĂNG NHẬP'),
                 ),
                 const SizedBox(height: 28),
 
@@ -192,7 +192,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   label: const Text(
-                    'Continue with Google',
+                    'Tiếp tục với Google',
                     style: TextStyle(
                       fontWeight: FontWeight.w600,
                       color: AppColors.textPrimary,
@@ -208,7 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     const Text(
-                      "Don't have an account? ",
+                      "Chưa có tài khoản? ",
                       style: TextStyle(
                         fontSize: 14,
                         color: AppColors.textSecondary,
@@ -219,7 +219,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ? null
                           : () => context.push(AppRoutes.register),
                       child: const Text(
-                        'SIGN UP',
+                        'ĐĂNG KÝ',
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w700,
@@ -281,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 4),
         const Text(
-          'Electronic Warranty Center',
+          'Trung tâm Bảo hành Điện tử',
           style: TextStyle(
             fontSize: 13,
             color: AppColors.textSecondary,
@@ -299,7 +299,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Text(
-            'OR',
+            'HOẶC',
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,

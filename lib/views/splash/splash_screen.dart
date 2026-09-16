@@ -57,7 +57,7 @@ class SplashScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             const Text(
-              'Electronic Warranty Center',
+              'Trung tâm Bảo hành Điện tử',
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.textSecondary,

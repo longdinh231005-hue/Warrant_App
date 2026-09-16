@@ -41,56 +41,56 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 24),
 
                     // ── PERSONAL ───────────────────────────────────
-                    _buildSectionLabel('PERSONAL'),
+                    _buildSectionLabel('CÁ NHÂN'),
                     _buildGroupCard([
                       _buildMenuTile(
                         icon: Icons.person_outline_rounded,
                         iconBgColor: AppColors.primaryLight,
                         iconColor: AppColors.primaryBlue,
-                        title: 'Edit Personal Info',
-                        subtitle: 'Name, email, address',
+                        title: 'Chỉnh sửa Thông tin Cá nhân',
+                        subtitle: 'Tên, email, địa chỉ',
                       ),
                       _divider(),
                       _buildMenuTile(
                         icon: Icons.phone_outlined,
                         iconBgColor: AppColors.primaryLight,
                         iconColor: AppColors.primaryBlue,
-                        title: 'Contact Details',
-                        subtitle: '+84 912 345 678 · Verified',
+                        title: 'Chi tiết Liên hệ',
+                        subtitle: '+84 912 345 678 · Đã xác minh',
                       ),
                     ]),
                     const SizedBox(height: 12),
 
                     // ── SECURITY ───────────────────────────────────
-                    _buildSectionLabel('SECURITY'),
+                    _buildSectionLabel('BẢO MẬT'),
                     _buildGroupCard([
                       _buildMenuTile(
                         icon: Icons.lock_outline_rounded,
                         iconBgColor: const Color(0xFFFFF4E5),
                         iconColor: AppColors.warning,
-                        title: 'Change Password',
-                        subtitle: 'Last changed 3 months ago',
+                        title: 'Đổi Mật khẩu',
+                        subtitle: 'Đổi lần cuối 3 tháng trước',
                       ),
                       _divider(),
                       _buildMenuTile(
                         icon: Icons.security_rounded,
                         iconBgColor: const Color(0xFFFFF4E5),
                         iconColor: AppColors.warning,
-                        title: 'Two-Factor Authentication',
-                        subtitle: 'Adds an extra layer of security',
+                        title: 'Xác thực Hai yếu tố',
+                        subtitle: 'Thêm một lớp bảo mật bổ sung',
                       ),
                     ]),
                     const SizedBox(height: 12),
 
                     // ── PREFERENCES ────────────────────────────────
-                    _buildSectionLabel('PREFERENCES'),
+                    _buildSectionLabel('TUỲ CHỈNH'),
                     _buildGroupCard([
                       _buildMenuTile(
                         icon: Icons.notifications_none_rounded,
                         iconBgColor: const Color(0xFFE8F4FD),
                         iconColor: AppColors.primaryBlue,
-                        title: 'Notification Settings',
-                        subtitle: 'Repair updates, warranty alerts',
+                        title: 'Cài đặt Thông báo',
+                        subtitle: 'Cập nhật sửa chữa, cảnh báo bảo hành',
                         trailing: Switch(
                           value: _notificationsEnabled,
                           activeTrackColor: AppColors.primaryBlue,
@@ -103,8 +103,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         icon: Icons.language_rounded,
                         iconBgColor: const Color(0xFFE8F4FD),
                         iconColor: AppColors.primaryBlue,
-                        title: 'Language & Region',
-                        subtitle: 'English (US) · UTC+7',
+                        title: 'Ngôn ngữ & Khu vực',
+                        subtitle: 'Tiếng Việt (VN) · UTC+7',
                       ),
                     ]),
                     const SizedBox(height: 28),
@@ -132,7 +132,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
                         icon: const Icon(Icons.logout_rounded, size: 20),
                         label: const Text(
-                          'LOG OUT',
+                          'ĐĂNG XUẤT',
                           style: TextStyle(
                             fontWeight: FontWeight.w700,
                             letterSpacing: 1.5,
@@ -144,7 +144,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     // ── Footer ────────────────────────────────────
                     Text(
-                      'WARRANTSAFE V2.4.1 — © 2026 ALL RIGHTS RESERVED',
+                      'WARRANTSAFE V2.4.1 — © 2026 TẤT CẢ QUYỀN ĐƯỢC BẢO LƯU',
                       style: TextStyle(
                         fontSize: 10,
                         fontWeight: FontWeight.w600,
@@ -333,7 +333,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
                 const SizedBox(width: 6),
                 const Text(
-                  'VERIFIED CUSTOMER · 3YR MEMBER',
+                  'KHÁCH HÀNG ĐÃ XÁC MINH · THÀNH VIÊN 3 NĂM',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,

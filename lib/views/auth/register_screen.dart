@@ -160,7 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // ──────────────────────────────────────────────────────────────────
 
   Widget _buildStepIndicator({required bool isLoading}) {
-    final labels = ['YOUR INFO', 'SECURITY'];
+    final labels = ['THÔNG TIN', 'BẢO MẬT'];
     return Padding(
       padding: const EdgeInsets.fromLTRB(8, 8, 28, 0),
       child: Column(
@@ -183,7 +183,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               const SizedBox(width: 4),
               Text(
-                'STEP ${_currentStep + 1} OF 2 — ${labels[_currentStep]}',
+                'BƯỚC ${_currentStep + 1} TRÊN 2 — ${labels[_currentStep]}',
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -235,7 +235,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             const SizedBox(height: 16),
             const Text(
-              'Create account',
+              'Tạo tài khoản',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
@@ -245,14 +245,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Register to track and protect your devices',
+              'Đăng ký để theo dõi và bảo vệ thiết bị của bạn',
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 32),
 
             // Full Name
             CustomTextField(
-              label: 'Full Name',
+              label: 'Họ và tên',
               hintText: 'Alex Morgan',
               prefixIcon: Icons.person_outline_rounded,
               keyboardType: TextInputType.name,
@@ -273,7 +273,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             // Email Address
             CustomTextField(
-              label: 'Email Address',
+              label: 'Địa chỉ Email',
               hintText: 'alex@email.com',
               prefixIcon: Icons.mail_outline_rounded,
               keyboardType: TextInputType.emailAddress,
@@ -297,7 +297,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text('CONTINUE'),
+                  Text('TIẾP TỤC'),
                   SizedBox(width: 8),
                   Icon(Icons.arrow_forward, size: 18),
                 ],
@@ -318,7 +318,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'PHONE NUMBER',
+          'SỐ ĐIỆN THOẠI',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w700,
@@ -399,7 +399,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           children: [
             const SizedBox(height: 16),
             const Text(
-              'Secure your account',
+              'Bảo mật tài khoản',
               style: TextStyle(
                 fontSize: 26,
                 fontWeight: FontWeight.w800,
@@ -409,15 +409,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 6),
             const Text(
-              'Create a strong password to protect your data',
+              'Tạo một mật khẩu mạnh để bảo vệ dữ liệu của bạn',
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 32),
 
             // Password
             CustomTextField(
-              label: 'Password',
-              hintText: 'Min. 8 characters',
+              label: 'Mật khẩu',
+              hintText: 'Tối thiểu 8 ký tự',
               prefixIcon: Icons.lock_outline_rounded,
               obscureText: _obscurePassword,
               controller: _passwordCtrl,
@@ -445,8 +445,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
             // Confirm Password
             CustomTextField(
-              label: 'Confirm Password',
-              hintText: 'Re-enter your password',
+              label: 'Xác nhận Mật khẩu',
+              hintText: 'Nhập lại mật khẩu của bạn',
               prefixIcon: Icons.lock_outline_rounded,
               obscureText: _obscureConfirm,
               controller: _confirmCtrl,
@@ -493,7 +493,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         color: Colors.white,
                       ),
                     )
-                  : const Text('CREATE ACCOUNT'),
+                  : const Text('TẠO TÀI KHOẢN'),
             ),
             const SizedBox(height: 24),
 
@@ -515,11 +515,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ),
       child: Column(
         children: [
-          _ruleRow('At least 8 characters', _hasMinLength),
+          _ruleRow('Ít nhất 8 ký tự', _hasMinLength),
           const SizedBox(height: 10),
-          _ruleRow('One uppercase letter', _hasUppercase),
+          _ruleRow('Một chữ cái viết hoa', _hasUppercase),
           const SizedBox(height: 10),
-          _ruleRow('One number or symbol', _hasNumberOrSymbol),
+          _ruleRow('Một số hoặc ký tự đặc biệt', _hasNumberOrSymbol),
         ],
       ),
     );
@@ -577,17 +577,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 fontFamily: 'Roboto',
               ),
               children: [
-                TextSpan(text: 'I agree to the '),
+                TextSpan(text: 'Tôi đồng ý với '),
                 TextSpan(
-                  text: 'Terms of Service',
+                  text: 'Điều khoản Dịch vụ',
                   style: TextStyle(
                     color: AppColors.primaryBlue,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
-                TextSpan(text: ' and '),
+                TextSpan(text: ' và '),
                 TextSpan(
-                  text: 'Privacy Policy',
+                  text: 'Chính sách Bảo mật',
                   style: TextStyle(
                     color: AppColors.primaryBlue,
                     fontWeight: FontWeight.w600,
@@ -612,14 +612,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Text(
           _currentStep == 0
-              ? 'Already have an account? '
-              : 'Already registered? ',
+              ? 'Đã có tài khoản? '
+              : 'Đã đăng ký? ',
           style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
         GestureDetector(
           onTap: () => context.go(AppRoutes.login),
           child: const Text(
-            'LOGIN',
+            'ĐĂNG NHẬP',
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,

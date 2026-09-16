@@ -35,7 +35,7 @@ class RealApiService implements IApiService {
         onError: (DioException e, handler) {
           final message = e.response?.data?['message'] as String? ??
               e.message ??
-              'An unexpected error occurred.';
+              'Đã xảy ra lỗi không mong muốn.';
           handler.reject(
             DioException(
               requestOptions: e.requestOptions,
