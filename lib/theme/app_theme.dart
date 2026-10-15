@@ -5,15 +5,15 @@ class AppColors {
   AppColors._();
 
   // ── Primary palette ──────────────────────────────────────────────
-  static const Color primaryBlue = Color(0xFF1A8FE3);
-  static const Color primaryDark = Color(0xFF0D1B2A);
-  static const Color primaryLight = Color(0xFFE8F4FD);
+  static const Color primaryBlue = Color(0xFF0277BD);
+  static const Color primaryDark = Color(0xFF01579B);
+  static const Color primaryLight = Color(0xFFE1F5FE);
 
   // ── Neutral palette ──────────────────────────────────────────────
   static const Color white = Color(0xFFFFFFFF);
-  static const Color background = Color(0xFFF7F8FA);
-  static const Color cardGrey = Color(0xFFF2F3F5);
-  static const Color inputFill = Color(0xFFF5F6F8);
+  static const Color background = Color(0xFFF0F3F7); // Match Figma background
+  static const Color cardGrey = Color(0xFFF8F9FA);
+  static const Color inputFill = Color(0xFFF5F7F9);
   static const Color border = Color(0xFFE0E3E8);
   static const Color divider = Color(0xFFE8EAED);
 
@@ -67,9 +67,9 @@ class AppTheme {
             borderRadius: BorderRadius.circular(14),
           ),
           textStyle: const TextStyle(
-            fontSize: 15,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.8,
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
           ),
           elevation: 0,
         ),
@@ -97,26 +97,26 @@ class AppTheme {
           vertical: 18,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.0),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: AppColors.border, width: 1.0),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(
             color: AppColors.primaryBlue,
             width: 1.5,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(10),
           borderSide: const BorderSide(color: AppColors.error, width: 1.5),
         ),
         hintStyle: const TextStyle(

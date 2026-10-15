@@ -26,26 +26,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // ── Step 1 controllers ────────────────────────────────────────────
   final _step1FormKey = GlobalKey<FormState>();
   final _fullNameCtrl = TextEditingController();
-  final _phoneCtrl    = TextEditingController();
-  final _emailCtrl    = TextEditingController();
+  final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
 
   // ── Step 2 controllers ────────────────────────────────────────────
   final _step2FormKey = GlobalKey<FormState>();
   final _passwordCtrl = TextEditingController();
-  final _confirmCtrl  = TextEditingController();
+  final _confirmCtrl = TextEditingController();
 
   // ── Step 2 UI state ───────────────────────────────────────────────
   bool _obscurePassword = true;
-  bool _obscureConfirm  = true;
-  bool _agreedToTerms   = false;
+  bool _obscureConfirm = true;
+  bool _agreedToTerms = false;
 
   // ── Password validation ───────────────────────────────────────────
   String _password = '';
-  bool get _hasMinLength      => _password.length >= 8;
-  bool get _hasUppercase      => _password.contains(RegExp(r'[A-Z]'));
+  bool get _hasMinLength => _password.length >= 8;
+  bool get _hasUppercase => _password.contains(RegExp(r'[A-Z]'));
   bool get _hasNumberOrSymbol =>
       _password.contains(RegExp(r'[0-9!@#\$%^&*(),.?":{}|<>]'));
-  bool get _isPasswordValid   =>
+  bool get _isPasswordValid =>
       _hasMinLength && _hasUppercase && _hasNumberOrSymbol;
 
   // ── Country code dropdown ─────────────────────────────────────────
@@ -94,13 +94,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
           backgroundColor: AppColors.warning,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10)),
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
       return;
     }
 
     final vm = context.read<AuthViewModel>();
+
+    if (!vm.isMock) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Đăng ký qua OTP chưa khả dụng.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+      return;
+    }
+
     await vm.registerUser(
       fullName: _fullNameCtrl.text.trim(),
       phone: '$_selectedCountry ${_phoneCtrl.text.trim()}',
@@ -116,7 +132,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10)),
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
       vm.clearError();
@@ -127,8 +144,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isLoading =
-        context.select<AuthViewModel, bool>((vm) => vm.isLoading);
+    final isLoading = context.select<AuthViewModel, bool>((vm) => vm.isLoading);
+
+    if (!context.select<AuthViewModel, bool>((vm) => vm.isMock)) {
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text(
+                    'Đăng ký tài khoản Real qua OTP chưa được tích hợp trong ứng dụng. Không cần điền biểu mẫu Mock.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Quay lại đăng nhập'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -170,15 +212,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               if (_currentStep > 0)
                 IconButton(
                   icon: const Icon(Icons.chevron_left, size: 28),
-                  onPressed:
-                      isLoading ? null : () => _goToStep(_currentStep - 1),
+                  onPressed: isLoading
+                      ? null
+                      : () => _goToStep(_currentStep - 1),
                   color: AppColors.textSecondary,
                 )
               else
                 IconButton(
                   icon: const Icon(Icons.chevron_left, size: 28),
-                  onPressed:
-                      isLoading ? null : () => Navigator.pop(context),
+                  onPressed: isLoading ? null : () => Navigator.pop(context),
                   color: AppColors.textSecondary,
                 ),
               const SizedBox(width: 4),
@@ -339,18 +381,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   value: _selectedCountry,
-                  icon: const Icon(Icons.keyboard_arrow_down,
-                      size: 18, color: AppColors.textHint),
+                  icon: const Icon(
+                    Icons.keyboard_arrow_down,
+                    size: 18,
+                    color: AppColors.textHint,
+                  ),
                   style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
                   items: _countryCodes.map((code) {
-                    return DropdownMenuItem(
-                      value: code,
-                      child: Text(code),
-                    );
+                    return DropdownMenuItem(value: code, child: Text(code));
                   }).toList(),
                   onChanged: (v) =>
                       setState(() => _selectedCountry = v ?? _selectedCountry),
@@ -368,9 +410,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   fontWeight: FontWeight.w500,
                   color: AppColors.textPrimary,
                 ),
-                decoration: const InputDecoration(
-                  hintText: '+84 912 345 678',
-                ),
+                decoration: const InputDecoration(hintText: '+84 912 345 678'),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) {
                     return 'Nhập số điện thoại';
@@ -611,9 +651,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
         Text(
-          _currentStep == 0
-              ? 'Đã có tài khoản? '
-              : 'Đã đăng ký? ',
+          _currentStep == 0 ? 'Đã có tài khoản? ' : 'Đã đăng ký? ',
           style: const TextStyle(fontSize: 14, color: AppColors.textSecondary),
         ),
         GestureDetector(

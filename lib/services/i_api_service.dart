@@ -1,4 +1,6 @@
 import '../models/user_model.dart';
+import '../models/portal_request_models.dart';
+import '../models/portal_ticket_models.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Custom exception (shared between Mock and Real implementations)
@@ -7,15 +9,26 @@ import '../models/user_model.dart';
 /// Typed exception that wraps all API-level errors.
 /// The ViewModel catches [ApiException] without leaking Dio internals.
 class ApiException implements Exception {
-  const ApiException(this.message, {this.statusCode});
+  const ApiException(
+    this.message, {
+    this.statusCode,
+    this.fieldErrors = const {},
+  });
 
   final String message;
 
   /// HTTP status code when available (null for network / mock errors).
   final int? statusCode;
+  final Map<String, String> fieldErrors;
 
   @override
   String toString() => 'ApiException($statusCode): $message';
+}
+
+class NetworkException extends ApiException {
+  const NetworkException([
+    super.message = 'Lỗi kết nối mạng, vui lòng kiểm tra lại.',
+  ]) : super(statusCode: null);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -25,25 +38,54 @@ class ApiException implements Exception {
 /// Defines the contract for all API operations used by [AuthViewModel].
 ///
 /// Concrete implementations:
-///   • [MockApiService]  — in-memory mock with simulated latency (current)
-///   • [RealApiService]  — Dio-backed HTTP client (future)
+///   • [MockApiService]  — demo data without HTTP
+///   • [RealApiService]  — Dio-backed Soopi API client
 abstract class IApiService {
-  /// Authenticates the user and returns a [UserModel] containing the JWT.
+  /// Authenticates the user and returns a [AuthResponse] containing the JWT.
   /// Throws [ApiException] on invalid credentials.
-  Future<UserModel> login(String email, String password);
+  Future<AuthResponse> login(String username, String password);
 
   /// Creates a new account.
   /// Throws [ApiException] if [email] is already registered.
-  Future<UserModel> register({
+  Future<AuthResponse> register({
     required String fullName,
     required String phone,
     required String email,
     required String password,
   });
 
-  /// Fetches the profile for the given [userId].
+  /// Fetches the profile.
   /// Throws [ApiException] if not found.
-  Future<UserModel> getProfile(String userId);
+  Future<UserModel> getProfile();
+
+  /// Refreshes the session.
+  Future<AuthResponse> refresh(String refreshToken);
+
+  /// Logs out.
+  Future<void> logout(String? refreshToken);
+
+  /// Fetches owned devices.
+  Future<List<OwnedDevice>> getMyDevices();
+
+  /// Customer portal requests. Mock screens retain their own demo data source.
+  Future<PortalCatalog> getPortalCatalog() =>
+      throw UnsupportedError('Portal catalog is not available in Mock mode.');
+  Future<List<PortalRequestSummary>> getMyWarrantyRequests() =>
+      throw UnsupportedError('Portal requests are not available in Mock mode.');
+  Future<PortalRequestDetail> getMyWarrantyRequest(String code) =>
+      throw UnsupportedError(
+        'Portal request detail is not available in Mock mode.',
+      );
+  Future<String> submitMyWarrantyRequest(OwnWarrantyRequestData data) =>
+      throw UnsupportedError(
+        'Portal request submission is not available in Mock mode.',
+      );
+  Future<List<PortalTicketSummary>> getMyTickets() =>
+      throw UnsupportedError('Portal tickets are not available in Mock mode.');
+  Future<PortalTicketDetail> getPortalTicket(String code) =>
+      throw UnsupportedError(
+        'Portal ticket detail is not available in Mock mode.',
+      );
 
   /// Attaches a Bearer token to all subsequent requests.
   void setAuthToken(String token);

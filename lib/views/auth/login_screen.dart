@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../router/app_router.dart';
@@ -46,8 +47,9 @@ class _LoginScreenState extends State<LoginScreen> {
           content: Text(vm.errorMessage!),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
       vm.clearError();
@@ -60,6 +62,85 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     // Watch only isLoading to rebuild the button spinner efficiently.
     final isLoading = context.select<AuthViewModel, bool>((vm) => vm.isLoading);
+    final hasSessionPendingRetry = context.select<AuthViewModel, bool>(
+      (vm) => vm.hasSessionPendingRetry,
+    );
+    final errorMessage = context.select<AuthViewModel, String?>(
+      (vm) => vm.errorMessage,
+    );
+    final isMock = context.select<AuthViewModel, bool>((vm) => vm.isMock);
+
+    if (hasSessionPendingRetry) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.wifi_off_rounded,
+                  size: 64,
+                  color: AppColors.textHint,
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  errorMessage ?? 'Lỗi kết nối',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () => context.read<AuthViewModel>().tryAutoLogin(),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryBlue,
+                    foregroundColor: AppColors.white,
+                    minimumSize: const Size(200, 48),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Text(
+                          'THỬ LẠI',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          final vm = context.read<AuthViewModel>();
+                          await vm.logout();
+                          if (!context.mounted) return;
+                          // Clear the error and show login form by triggering a state refresh
+                          vm.tryAutoLogin(); // This will clear session internally because we logged out
+                        },
+                  child: const Text(
+                    'Đăng nhập tài khoản khác',
+                    style: TextStyle(color: AppColors.primaryBlue),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       body: SafeArea(
@@ -78,7 +159,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // ── Welcome text ────────────────────────────────────
                 const Text(
-                  'Chào mừng trở lại',
+                  'Đăng nhập',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -88,21 +169,89 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 6),
                 const Text(
-                  'Đăng nhập để quản lý bảo hành của bạn',
-                  style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  'Đăng nhập để quản lý bảo hành của bạn.',
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
+                const SizedBox(height: 24),
+
+                if (isMock)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppColors.border, width: 1.0),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          size: 20,
+                          color: AppColors.textSecondary,
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Chế độ Mock: chỉ dùng tài khoản mẫu bên dưới. Không kết nối API hoặc cơ sở dữ liệu.',
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: AppColors.textSecondary,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                if (errorMessage != null && !hasSessionPendingRetry) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.error_outline,
+                          color: AppColors.error,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            errorMessage,
+                            style: const TextStyle(
+                              color: AppColors.error,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 32),
 
                 // ── Email / Phone field ─────────────────────────────
                 CustomTextField(
-                  label: 'Số điện thoại hoặc Email',
-                  hintText: 'alex.morgan@email.com',
-                  prefixIcon: Icons.mail_outline_rounded,
+                  label: 'Số điện thoại hoặc email *',
+                  hintText: 'minhanh@example.com',
                   keyboardType: TextInputType.emailAddress,
                   controller: _emailCtrl,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
-                      return 'Vui lòng nhập email hoặc số điện thoại';
+                      return 'Vui lòng nhập tên đăng nhập hoặc email';
                     }
                     return null;
                   },
@@ -111,14 +260,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // ── Password field ──────────────────────────────────
                 CustomTextField(
-                  label: 'Mật khẩu',
-                  hintText: 'Nhập mật khẩu của bạn',
-                  prefixIcon: Icons.lock_outline_rounded,
+                  label: 'Mật khẩu *',
+                  hintText: 'Nhập mật khẩu',
                   obscureText: _obscurePassword,
                   controller: _passwordCtrl,
                   validator: (v) {
                     if (v == null || v.isEmpty) return 'Vui lòng nhập mật khẩu';
-                    if (v.length < 6) return 'Mật khẩu tối thiểu 6 ký tự';
                     return null;
                   },
                   suffixIcon: IconButton(
@@ -135,27 +282,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
                 const SizedBox(height: 8),
 
-                // ── Forgot Password ─────────────────────────────────
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: isLoading ? null : () {},
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text(
-                      'QUÊN MẬT KHẨU?',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 1,
-                        color: AppColors.primaryBlue,
-                      ),
-                    ),
-                  ),
-                ),
                 const SizedBox(height: 28),
 
                 // ── LOGIN button ────────────────────────────────────
@@ -170,70 +296,24 @@ class _LoginScreenState extends State<LoginScreen> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('ĐĂNG NHẬP'),
-                ),
-                const SizedBox(height: 28),
-
-                // ── OR Divider ──────────────────────────────────────
-                _buildOrDivider(),
-                const SizedBox(height: 28),
-
-                // ── Continue with Google ────────────────────────────
-                OutlinedButton.icon(
-                  onPressed: isLoading ? null : () {},
-                  icon: Image.network(
-                    'https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg',
-                    height: 20,
-                    width: 20,
-                    errorBuilder: (context, error, stackTrace) => const Icon(
-                      Icons.g_mobiledata_rounded,
-                      size: 24,
-                      color: AppColors.google,
-                    ),
-                  ),
-                  label: const Text(
-                    'Tiếp tục với Google',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 32),
-
-                // ── Sign Up link ────────────────────────────────────────────
-                // Wrap handles text overflow on narrow screens gracefully.
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    const Text(
-                      "Chưa có tài khoản? ",
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: AppColors.textSecondary,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: isLoading
-                          ? null
-                          : () => context.push(AppRoutes.register),
-                      child: const Text(
-                        'ĐĂNG KÝ',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.primaryBlue,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                  ],
+                      : const Text('Đăng nhập'),
                 ),
                 const SizedBox(height: 24),
 
+                // ── API Configuration ───────────────────────────────
+                _buildApiConfig(context),
+                const SizedBox(height: 16),
+
                 // ── Hint for demo / testing ─────────────────────────
-                _buildDemoHint(),
+                if (isMock) ...[
+                  _buildDemoHint(),
+                  TextButton(
+                    onPressed: isLoading
+                        ? null
+                        : () => context.push(AppRoutes.register),
+                    child: const Text('Tạo tài khoản Mock'),
+                  ),
+                ],
                 const SizedBox(height: 16),
               ],
             ),
@@ -292,27 +372,6 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildOrDivider() {
-    return Row(
-      children: [
-        const Expanded(child: Divider()),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            'HOẶC',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textHint,
-              letterSpacing: 1,
-            ),
-          ),
-        ),
-        const Expanded(child: Divider()),
-      ],
-    );
-  }
-
   /// Small card showing mock credentials – visible during development only.
   Widget _buildDemoHint() {
     return Container(
@@ -327,8 +386,11 @@ class _LoginScreenState extends State<LoginScreen> {
         children: [
           const Row(
             children: [
-              Icon(Icons.info_outline_rounded,
-                  size: 14, color: AppColors.primaryBlue),
+              Icon(
+                Icons.info_outline_rounded,
+                size: 14,
+                color: AppColors.primaryBlue,
+              ),
               SizedBox(width: 6),
               // Flexible prevents overflow when container is narrow.
               Flexible(
@@ -367,11 +429,136 @@ class _LoginScreenState extends State<LoginScreen> {
         '[$role] $email / $pass  (tap to fill)',
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: const TextStyle(
-          fontSize: 11,
-          color: AppColors.textSecondary,
-        ),
+        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
       ),
+    );
+  }
+
+  Widget _buildApiConfig(BuildContext context) {
+    final vm = context.watch<AuthViewModel>();
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.cardGrey,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Chế độ Mock (Giao diện)',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+              ),
+              Switch(
+                value: vm.isMock,
+                onChanged: (val) =>
+                    context.read<AuthViewModel>().toggleMockMode(val),
+                activeTrackColor: AppColors.primaryBlue.withValues(alpha: 0.5),
+                activeThumbImage: null,
+              ),
+            ],
+          ),
+          if (!vm.isMock) ...[
+            const SizedBox(height: 8),
+            if (kDebugMode)
+              _ApiUrlEditor(initialUrl: vm.baseUrl)
+            else
+              TextFormField(
+                initialValue: vm.baseUrl,
+                decoration: const InputDecoration(
+                  labelText: 'Base URL (Chỉ xem)',
+                  isDense: true,
+                ),
+                enabled: false,
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _ApiUrlEditor extends StatefulWidget {
+  final String initialUrl;
+  const _ApiUrlEditor({required this.initialUrl});
+
+  @override
+  State<_ApiUrlEditor> createState() => _ApiUrlEditorState();
+}
+
+class _ApiUrlEditorState extends State<_ApiUrlEditor> {
+  late TextEditingController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = TextEditingController(text: widget.initialUrl);
+  }
+
+  @override
+  void didUpdateWidget(_ApiUrlEditor old) {
+    super.didUpdateWidget(old);
+    if (old.initialUrl != widget.initialUrl &&
+        _ctrl.text != widget.initialUrl) {
+      _ctrl.text = widget.initialUrl;
+    }
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  void _apply() async {
+    try {
+      await context.read<AuthViewModel>().setBaseUrl(_ctrl.text.trim());
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Đã cập nhật Base URL'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.toString().replaceAll('Exception: ', '')),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: TextFormField(
+            controller: _ctrl,
+            decoration: const InputDecoration(
+              labelText: 'Base URL',
+              isDense: true,
+            ),
+            onFieldSubmitted: (_) => _apply(),
+          ),
+        ),
+        const SizedBox(width: 8),
+        IconButton(
+          icon: const Icon(
+            Icons.check_circle_outline,
+            color: AppColors.primaryBlue,
+          ),
+          onPressed: _apply,
+        ),
+      ],
     );
   }
 }

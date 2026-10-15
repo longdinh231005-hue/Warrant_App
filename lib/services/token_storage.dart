@@ -10,15 +10,15 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 ///   • [SecureTokenStorage]  — `flutter_secure_storage` (iOS/Android/Web)
 ///   • `InMemoryTokenStorage` in `test/` — lightweight test double
 abstract class TokenStorage {
-  /// Persists the auth [token] and [userId] to secure storage.
-  Future<void> saveSession({required String token, required String userId});
+  /// Persists the auth [token], [refreshToken] and [userId] to secure storage.
+  Future<void> saveSession({required String token, String? refreshToken, required String userId, bool isMock = false});
 
-  /// Reads the stored [token] and [userId].
-  /// Returns `{'token': null, 'userId': null}` when nothing is stored.
-  Future<Map<String, String?>> readSession();
+  /// Reads the stored keys.
+  /// Returns `{'token': ..., 'refreshToken': ..., 'userId': ...}`
+  Future<Map<String, String?>> readSession({bool isMock = false});
 
-  /// Removes both keys from storage (called on logout).
-  Future<void> clearSession();
+  /// Removes all keys from storage (called on logout).
+  Future<void> clearSession({bool isMock = false});
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -52,34 +52,44 @@ class SecureTokenStorage implements TokenStorage {
 
   // ── Private storage keys ─────────────────────────────────────────────────
   static const _tokenKey  = 'warrantsafe_auth_token';
+  static const _refreshTokenKey = 'warrantsafe_refresh_token';
   static const _userIdKey = 'warrantsafe_user_id';
+
+  String _getKey(String key, bool isMock) => isMock ? 'mock_$key' : key;
 
   @override
   Future<void> saveSession({
     required String token,
+    String? refreshToken,
     required String userId,
+    bool isMock = false,
   }) async {
-    // Write both keys in parallel for speed.
-    await Future.wait([
-      _storage.write(key: _tokenKey,  value: token),
-      _storage.write(key: _userIdKey, value: userId),
-    ]);
+    final futures = <Future>[
+      _storage.write(key: _getKey(_tokenKey, isMock),  value: token),
+      _storage.write(key: _getKey(_userIdKey, isMock), value: userId),
+    ];
+    if (refreshToken != null) {
+      futures.add(_storage.write(key: _getKey(_refreshTokenKey, isMock), value: refreshToken));
+    }
+    await Future.wait(futures);
   }
 
   @override
-  Future<Map<String, String?>> readSession() async {
+  Future<Map<String, String?>> readSession({bool isMock = false}) async {
     final results = await Future.wait([
-      _storage.read(key: _tokenKey),
-      _storage.read(key: _userIdKey),
+      _storage.read(key: _getKey(_tokenKey, isMock)),
+      _storage.read(key: _getKey(_refreshTokenKey, isMock)),
+      _storage.read(key: _getKey(_userIdKey, isMock)),
     ]);
-    return {'token': results[0], 'userId': results[1]};
+    return {'token': results[0], 'refreshToken': results[1], 'userId': results[2]};
   }
 
   @override
-  Future<void> clearSession() async {
+  Future<void> clearSession({bool isMock = false}) async {
     await Future.wait([
-      _storage.delete(key: _tokenKey),
-      _storage.delete(key: _userIdKey),
+      _storage.delete(key: _getKey(_tokenKey, isMock)),
+      _storage.delete(key: _getKey(_refreshTokenKey, isMock)),
+      _storage.delete(key: _getKey(_userIdKey, isMock)),
     ]);
   }
 }

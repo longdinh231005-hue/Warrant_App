@@ -1,72 +1,136 @@
-/// Represents the authenticated user returned by the API.
-///
-/// Designed to be forward-compatible with a real backend:
-///   • [fromJson] parses a raw Map (e.g. from Dio response).
-///   • [toJson]   serialises back – useful for caching or logging.
-///   • [copyWith] allows immutable updates inside the ViewModel.
+class AuthResponse {
+  const AuthResponse({
+    required this.accessToken,
+    required this.expiresIn,
+    required this.refreshToken,
+    required this.refreshExpiresIn,
+    required this.user,
+  });
+
+  final String accessToken;
+  final int expiresIn;
+  final String? refreshToken;
+  final int? refreshExpiresIn;
+  final UserModel user;
+
+  factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    return AuthResponse(
+      accessToken: json['accessToken'] as String,
+      expiresIn: json['expiresIn'] as int? ?? 0,
+      refreshToken: json['refreshToken'] as String?,
+      refreshExpiresIn: json['refreshExpiresIn'] as int?,
+      user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
+    );
+  }
+}
+
 class UserModel {
   const UserModel({
     required this.id,
     required this.fullName,
-    required this.email,
+    required this.username,
     required this.phone,
     required this.role,
-    required this.token,
+    this.email = '',
+    this.address = '',
+    this.customerCode,
   });
 
   final String id;
+  final String? customerCode;
   final String fullName;
-  final String email;
+  final String username;
   final String phone;
-
-  /// e.g. "admin" | "customer" – ready for role-based routing.
   final String role;
+  final String email;
+  final String address;
 
-  /// JWT (or mock) bearer token.
-  final String token;
-
-  // ── Deserialisation ────────────────────────────────────────────────
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    String? extractRole(dynamic rolesList) {
+      if (rolesList is List && rolesList.isNotEmpty) {
+        final firstRole = rolesList.first;
+        if (firstRole is Map<String, dynamic>) {
+          return firstRole['code'] as String?;
+        }
+        if (firstRole is String) return firstRole;
+      }
+      return null;
+    }
+
+    // Handle both Mock schema and Real backend UserView/Profile schema
     return UserModel(
-      id: json['id'] as String,
-      fullName: json['fullName'] as String,
-      email: json['email'] as String,
-      phone: json['phone'] as String,
-      role: json['role'] as String? ?? 'customer',
-      token: json['token'] as String,
+      id: json['accountId'] as String? ?? json['id'] as String? ?? '',
+      customerCode: json['customerCode'] as String?,
+      fullName: json['displayName'] as String? ?? json['fullName'] as String? ?? 'N/A',
+      username: json['username'] as String? ?? json['email'] as String? ?? '',
+      phone: json['phone'] as String? ?? '',
+      email: json['email'] as String? ?? '',
+      address: json['address'] as String? ?? '',
+      role: extractRole(json['roles']) ?? json['role'] as String? ?? 'customer',
     );
   }
 
-  // ── Serialisation ──────────────────────────────────────────────────
   Map<String, dynamic> toJson() => {
         'id': id,
         'fullName': fullName,
-        'email': email,
+        'username': username,
         'phone': phone,
+        'email': email,
+        'address': address,
         'role': role,
-        'token': token,
       };
 
-  // ── Immutable update helper ────────────────────────────────────────
   UserModel copyWith({
-    String? id,
+    String? customerCode,
     String? fullName,
-    String? email,
     String? phone,
-    String? role,
-    String? token,
+    String? email,
+    String? address,
   }) {
     return UserModel(
-      id: id ?? this.id,
+      id: id,
+      customerCode: customerCode ?? this.customerCode,
       fullName: fullName ?? this.fullName,
-      email: email ?? this.email,
+      username: username,
       phone: phone ?? this.phone,
-      role: role ?? this.role,
-      token: token ?? this.token,
+      email: email ?? this.email,
+      address: address ?? this.address,
+      role: role,
     );
   }
+}
 
-  @override
-  String toString() =>
-      'UserModel(id: $id, fullName: $fullName, email: $email, role: $role)';
+class OwnedDevice {
+  const OwnedDevice({
+    required this.code,
+    required this.productName,
+    required this.brandName,
+    required this.identifierType,
+    required this.serialOrImei,
+    this.warrantyActivatedOn,
+    this.warrantyExpiresOn,
+    this.warrantyStatus,
+  });
+
+  final String code; // identifier value
+  final String productName;
+  final String brandName;
+  final String identifierType;
+  final String serialOrImei;
+  final String? warrantyActivatedOn;
+  final String? warrantyExpiresOn;
+  final String? warrantyStatus;
+
+  factory OwnedDevice.fromJson(Map<String, dynamic> json) {
+    return OwnedDevice(
+      code: json['code'] as String? ?? '',
+      productName: json['productName'] as String? ?? '',
+      brandName: json['brandName'] as String? ?? '',
+      identifierType: json['identifierType'] as String? ?? '',
+      serialOrImei: json['serialOrImei'] as String? ?? '',
+      warrantyActivatedOn: json['warrantyActivatedOn'] as String?,
+      warrantyExpiresOn: json['warrantyExpiresOn'] as String?,
+      warrantyStatus: json['warrantyStatus'] as String?,
+    );
+  }
 }
