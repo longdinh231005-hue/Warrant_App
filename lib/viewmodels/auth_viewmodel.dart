@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../models/portal_request_models.dart';
@@ -5,6 +7,8 @@ import '../models/portal_ticket_models.dart';
 import '../services/i_api_service.dart';
 import '../services/api_service.dart';
 import '../services/real_api_service.dart';
+import '../models/portal_lookup_models.dart';
+import '../models/portal_notification_models.dart';
 import '../services/token_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -12,7 +16,9 @@ class AuthViewModel extends ChangeNotifier {
   AuthViewModel({TokenStorage? tokenStorage, IApiService? apiService})
     : _storage = tokenStorage ?? SecureTokenStorage(),
       _api = apiService ?? MockApiService(),
-      _hasInjectedApi = apiService != null;
+      _hasInjectedApi = apiService != null {
+    _attachRealRefresh();
+  }
 
   final bool _hasInjectedApi;
 
@@ -68,6 +74,7 @@ class AuthViewModel extends ChangeNotifier {
         _api = RealApiService(baseUrl: _baseUrl);
       }
     }
+    _attachRealRefresh();
   }
 
   late IApiService _api;
@@ -76,6 +83,89 @@ class AuthViewModel extends ChangeNotifier {
   @visibleForTesting
   void setApiForTesting(IApiService api) {
     _api = api;
+    _attachRealRefresh();
+  }
+
+  int _sessionGeneration = 0;
+
+  int? _notificationUnreadCount;
+  bool _notificationCountLoading = false;
+  bool _notificationCountError = false;
+
+  /// Server-reported unread count for the current authenticated Real session.
+  int? get notificationUnreadCount => _notificationUnreadCount;
+  bool get notificationCountLoading => _notificationCountLoading;
+  bool get notificationCountError => _notificationCountError;
+
+  void _clearNotificationState() {
+    _notificationUnreadCount = null;
+    _notificationCountLoading = false;
+    _notificationCountError = false;
+  }
+
+  bool _isCurrentNotificationScope({
+    required int generation,
+    required String? userId,
+    required IApiService api,
+    required bool isMock,
+    required String baseUrl,
+  }) =>
+      generation == _sessionGeneration &&
+      userId != null &&
+      userId == _currentUser?.id &&
+      identical(api, _api) &&
+      isMock == _isMock &&
+      !isMock &&
+      baseUrl == _baseUrl;
+
+  void _attachRealRefresh() {
+    if (_api is RealApiService) {
+      (_api as RealApiService).onAccessTokenExpired = _refreshForRead;
+    }
+  }
+
+  Future<String?> _refreshForRead() async {
+    final userId = _currentUser?.id;
+    if (_isMock || userId == null) return null;
+    final generation = _sessionGeneration;
+    final api = _api;
+    final session = await _storage.readSession(isMock: false);
+    final refreshToken = session['refreshToken'];
+    if (refreshToken == null) return null;
+
+    try {
+      final response = await api.refresh(refreshToken);
+      if (generation != _sessionGeneration ||
+          _isMock ||
+          _currentUser?.id != userId ||
+          !identical(api, _api)) {
+        return null;
+      }
+      if (response.user.id != userId || response.refreshToken == null) {
+        throw const ApiException('Máy chủ trả về phiên không hợp lệ.');
+      }
+      await _storage.saveSession(
+        token: response.accessToken,
+        refreshToken: response.refreshToken,
+        userId: userId,
+        isMock: false,
+      );
+      api.setAuthToken(response.accessToken);
+      return response.accessToken;
+    } on ApiException catch (error) {
+      // This backend returns 401 when the refresh credential is invalid,
+      // expired or reused. Network and server errors keep the local session.
+      if (error.statusCode == 401 &&
+          generation == _sessionGeneration &&
+          identical(api, _api)) {
+        await _storage.clearSession(isMock: false);
+        api.clearAuthToken();
+        _currentUser = null;
+        _clearNotificationState();
+        notifyListeners();
+      }
+      rethrow;
+    }
   }
 
   bool _isMock = true;
@@ -118,6 +208,7 @@ class AuthViewModel extends ChangeNotifier {
           _api = RealApiService(baseUrl: _baseUrl);
         }
       }
+      _attachRealRefresh();
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isMock', _isMock);
@@ -141,10 +232,13 @@ class AuthViewModel extends ChangeNotifier {
       );
     }
 
+    final urlChanged = _baseUrl != url;
     _baseUrl = url;
     if (!_isMock && _api is RealApiService) {
       (_api as RealApiService).setBaseUrl(url);
     }
+
+    if (urlChanged) _clearNotificationState();
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('baseUrl', _baseUrl);
@@ -174,9 +268,12 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<bool> loginUser(String email, String password) async {
+    _sessionGeneration++;
+    _clearNotificationState();
     _begin();
     try {
       final response = await _api.login(email.trim(), password);
+      _sessionGeneration++;
       await _storage.saveSession(
         token: response.accessToken,
         refreshToken: response.refreshToken,
@@ -185,6 +282,7 @@ class AuthViewModel extends ChangeNotifier {
       );
       _api.setAuthToken(response.accessToken);
       _currentUser = response.user;
+      unawaited(_primeNotificationCount());
       await refreshProfile(); // Load additional profile details
       _end();
       return true;
@@ -209,6 +307,8 @@ class AuthViewModel extends ChangeNotifier {
     required String email,
     required String password,
   }) async {
+    _sessionGeneration++;
+    _clearNotificationState();
     _begin();
     try {
       final response = await _api.register(
@@ -225,6 +325,7 @@ class AuthViewModel extends ChangeNotifier {
       );
       _api.setAuthToken(response.accessToken);
       _currentUser = response.user;
+      unawaited(_primeNotificationCount());
       _end();
       return true;
     } on ApiException catch (e) {
@@ -276,10 +377,76 @@ class AuthViewModel extends ChangeNotifier {
   Future<PortalTicketDetail> getPortalTicket(String code) =>
       _api.getPortalTicket(code);
 
+  Future<PortalNotificationInbox> getNotifications() async {
+    final api = _api;
+    final userId = _currentUser?.id;
+    final isMock = _isMock;
+    if (isMock || userId == null) return api.getNotifications();
+
+    final generation = _sessionGeneration;
+    final baseUrl = _baseUrl;
+    _notificationCountLoading = true;
+    _notificationCountError = false;
+    notifyListeners();
+
+    try {
+      final inbox = await api.getNotifications();
+      if (_isCurrentNotificationScope(
+        generation: generation,
+        userId: userId,
+        api: api,
+        isMock: isMock,
+        baseUrl: baseUrl,
+      )) {
+        _notificationUnreadCount = inbox.unreadCount;
+        _notificationCountLoading = false;
+        _notificationCountError = false;
+        notifyListeners();
+      }
+      return inbox;
+    } catch (_) {
+      if (_isCurrentNotificationScope(
+        generation: generation,
+        userId: userId,
+        api: api,
+        isMock: isMock,
+        baseUrl: baseUrl,
+      )) {
+        // An unavailable response cannot be treated as the server's current
+        // count, so do not leave a stale number visible after a failed read.
+        _notificationUnreadCount = null;
+        _notificationCountLoading = false;
+        _notificationCountError = true;
+        notifyListeners();
+      }
+      rethrow;
+    }
+  }
+
+  Future<void> _primeNotificationCount() async {
+    try {
+      await getNotifications();
+    } catch (_) {
+      // The inbox screen provides the visible retry path for read failures.
+    }
+  }
+
+  Future<void> markNotificationRead(String id) => _api.markNotificationRead(id);
+
+  Future<PortalLookupRecord> lookupPortal(String code, String phone) =>
+      _api.lookupPortal(code, phone);
+
+  Future<PortalTicketDetail> decidePortalQuotation(
+    String code,
+    String decision, {
+    String? reason,
+  }) => _api.decidePortalQuotation(code, decision, reason: reason);
+
   Future<String> submitMyWarrantyRequest(OwnWarrantyRequestData data) =>
       _api.submitMyWarrantyRequest(data);
 
   Future<void> tryAutoLogin() async {
+    _clearNotificationState();
     _setLoading(true);
     try {
       final session = await _storage.readSession(isMock: _isMock);
@@ -296,17 +463,18 @@ class AuthViewModel extends ChangeNotifier {
             isMock: _isMock,
           );
           _api.setAuthToken(response.accessToken);
+          _sessionGeneration++;
           _currentUser = response.user;
           await refreshProfile(); // Ensure profile is loaded after refresh
           _hasSessionPendingRetry = false;
+          unawaited(_primeNotificationCount());
           return;
         } on NetworkException {
           rethrow;
         } on ApiException catch (e) {
-          if (e.statusCode == 400 ||
-              e.statusCode == 401 ||
-              e.statusCode == 403) {
+          if (e.statusCode == 401) {
             await _storage.clearSession(isMock: _isMock);
+            _clearNotificationState();
             _hasSessionPendingRetry = false;
             return;
           }
@@ -327,8 +495,9 @@ class AuthViewModel extends ChangeNotifier {
       _setError(e.message);
       _hasSessionPendingRetry = true;
     } on ApiException catch (e) {
-      if (e.statusCode == 400 || e.statusCode == 401 || e.statusCode == 403) {
+      if (e.statusCode == 401) {
         await _storage.clearSession(isMock: _isMock);
+        _clearNotificationState();
         _hasSessionPendingRetry = false;
       } else {
         _hasSessionPendingRetry = true;
@@ -343,6 +512,8 @@ class AuthViewModel extends ChangeNotifier {
   }
 
   Future<void> logout({bool keepLoading = false}) async {
+    _sessionGeneration++;
+    _clearNotificationState();
     _setLoading(true);
     try {
       final session = await _storage.readSession(isMock: _isMock);

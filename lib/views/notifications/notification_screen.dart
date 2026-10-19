@@ -6,6 +6,7 @@ import '../../router/app_router.dart';
 import '../../widgets/app_bar_widget.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import 'real_notification_content.dart';
 
 class NotificationScreen extends StatefulWidget {
   const NotificationScreen({super.key});
@@ -120,19 +121,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
               ),
             Expanded(
               child: !isMock
-                  ? const Center(
-                      child: Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Text(
-                          'Tính năng thông báo chưa khả dụng ở chế độ thực. Vui lòng sử dụng chế độ Mock để xem giao diện.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: AppColors.textHint,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ),
-                    )
+                  ? const RealNotificationContent()
                   : (mockNotifications.isEmpty
                         ? _buildEmptyState()
                         : ListView.builder(

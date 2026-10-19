@@ -51,7 +51,8 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isMock = context.watch<AuthViewModel>().isMock;
+    final auth = context.watch<AuthViewModel>();
+    final isMock = auth.isMock;
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -59,7 +60,12 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
         child: Column(
           children: [
             WarrantSafeAppBar(
-              unreadCount: isMock ? unreadNotificationCount : 0,
+              unreadCount: isMock
+                  ? unreadNotificationCount
+                  : auth.notificationUnreadCount,
+              notificationCountLoading:
+                  !isMock && auth.notificationCountLoading,
+              notificationCountError: !isMock && auth.notificationCountError,
               onNotificationTap: () => context.go(AppRoutes.notifications),
             ),
             const Divider(height: 1),
@@ -86,20 +92,23 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
                         size: 20,
                       ),
                       const SizedBox(width: 8),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Tra cứu thiết bị qua Serial/IMEI',
-                          style: TextStyle(
+                          isMock
+                              ? 'Tra cứu thiết bị qua Serial/IMEI'
+                              : 'Tra cứu yêu cầu/phiếu bằng mã và SĐT',
+                          style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 14,
                           ),
                         ),
                       ),
-                      Icon(
-                        Icons.qr_code_scanner_rounded,
-                        color: AppColors.primaryBlue.withValues(alpha: 0.7),
-                        size: 20,
-                      ),
+                      if (isMock)
+                        Icon(
+                          Icons.qr_code_scanner_rounded,
+                          color: AppColors.primaryBlue.withValues(alpha: 0.7),
+                          size: 20,
+                        ),
                     ],
                   ),
                 ),

@@ -1,6 +1,8 @@
 import '../models/user_model.dart';
 import '../models/portal_request_models.dart';
 import '../models/portal_ticket_models.dart';
+import '../models/portal_lookup_models.dart';
+import '../models/portal_notification_models.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Custom exception (shared between Mock and Real implementations)
@@ -86,6 +88,20 @@ abstract class IApiService {
       throw UnsupportedError(
         'Portal ticket detail is not available in Mock mode.',
       );
+  Future<PortalLookupRecord> lookupPortal(String code, String phone) =>
+      throw UnsupportedError('Portal lookup is not available in Mock mode.');
+  Future<PortalTicketDetail> decidePortalQuotation(
+    String ticketCode,
+    String decision, {
+    String? reason,
+  }) => throw UnsupportedError(
+    'Portal quotation decision is not available in Mock mode.',
+  );
+
+  Future<PortalNotificationInbox> getNotifications() =>
+      throw UnsupportedError('Notifications are not available in Mock mode.');
+  Future<void> markNotificationRead(String id) =>
+      throw UnsupportedError('Notifications are not available in Mock mode.');
 
   /// Attaches a Bearer token to all subsequent requests.
   void setAuthToken(String token);

@@ -40,7 +40,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             // ── App bar ─────────────────────────────────────────────
             WarrantSafeAppBar(
-              unreadCount: vm.isMock ? unreadNotificationCount : 0,
+              unreadCount: vm.isMock
+                  ? unreadNotificationCount
+                  : vm.notificationUnreadCount,
+              notificationCountLoading:
+                  !vm.isMock && vm.notificationCountLoading,
+              notificationCountError: !vm.isMock && vm.notificationCountError,
               onNotificationTap: () => context.go(AppRoutes.notifications),
             ),
             const Divider(height: 1),

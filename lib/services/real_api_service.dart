@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:dio/io.dart';
+import 'package:flutter/foundation.dart';
 import '../models/user_model.dart';
 import '../models/portal_request_models.dart';
 import '../models/portal_ticket_models.dart';
+import '../models/portal_lookup_models.dart';
+import '../models/portal_notification_models.dart';
 import 'i_api_service.dart';
 
 class RealApiService implements IApiService {
@@ -24,6 +27,10 @@ class RealApiService implements IApiService {
   }
 
   final Dio _dio;
+  Future<String?> Function()? onAccessTokenExpired;
+  Future<String?>? _refreshInFlight;
+  String? _lastRenewedFromAuthorization;
+  int _sessionEpoch = 0;
 
   // Set baseUrl dynamically
   void setBaseUrl(String url) {
@@ -32,6 +39,95 @@ class RealApiService implements IApiService {
 
   void _addInterceptors() {
     // Interceptors to handle global things like logging if needed
+  }
+
+  Future<Response<dynamic>> _postWithoutAuthorization(
+    String path,
+    Map<String, dynamic> data,
+  ) {
+    final request = Options(method: 'POST').compose(
+      _dio.options,
+      path,
+      data: data,
+    );
+    // Keep the shared Bearer for concurrent GETs. Public auth endpoints must
+    // not inherit an expired access token from the Dio defaults.
+    request.headers.remove('Authorization');
+    return _dio.fetch<dynamic>(request);
+  }
+
+  Future<Response<dynamic>> _get(String path) async {
+    final sessionEpoch = _sessionEpoch;
+    try {
+      return await _dio.get(path);
+    } on DioException catch (error) {
+      final failedAuthorization =
+          error.requestOptions.headers['Authorization'] as String?;
+      if (error.response?.statusCode != 401 ||
+          failedAuthorization == null ||
+          sessionEpoch != _sessionEpoch ||
+          onAccessTokenExpired == null) {
+        _handleDioError(error);
+      }
+      if (kDebugMode) {
+        debugPrint('GET ${error.requestOptions.path} -> 401; refresh pending');
+      }
+
+      // A different GET may already have refreshed the token. Otherwise only
+      // one refresh may rotate the backend refresh credential at a time.
+      final currentAuthorization =
+          _dio.options.headers['Authorization'] as String?;
+      String? accessToken;
+      if (currentAuthorization != null &&
+          currentAuthorization != failedAuthorization &&
+          _lastRenewedFromAuthorization == failedAuthorization &&
+          currentAuthorization.startsWith('Bearer ')) {
+        accessToken = currentAuthorization.substring(7);
+      } else {
+        if (currentAuthorization != failedAuthorization &&
+            _refreshInFlight == null) {
+          _handleDioError(error);
+        }
+        final pending = _refreshInFlight ??= onAccessTokenExpired!();
+        try {
+          accessToken = await pending;
+          if (accessToken != null) {
+            _lastRenewedFromAuthorization = failedAuthorization;
+          }
+        } finally {
+          if (identical(_refreshInFlight, pending)) _refreshInFlight = null;
+        }
+      }
+      if (accessToken == null || sessionEpoch != _sessionEpoch) {
+        _handleDioError(error);
+      }
+
+      // Only the failed GET is repeated, and only once. POST requests never
+      // enter this path, including login, refresh and warranty submission.
+      try {
+        final response = await _dio.fetch<dynamic>(
+          error.requestOptions.copyWith(
+            headers: {
+              ...error.requestOptions.headers,
+              'Authorization': 'Bearer $accessToken',
+            },
+          ),
+        );
+        if (kDebugMode) {
+          debugPrint(
+            'GET ${error.requestOptions.path} retry -> ${response.statusCode}',
+          );
+        }
+        return response;
+      } on DioException catch (retryError) {
+        if (kDebugMode) {
+          debugPrint(
+            'GET ${error.requestOptions.path} retry -> ${retryError.response?.statusCode ?? 'network'}',
+          );
+        }
+        _handleDioError(retryError);
+      }
+    }
   }
 
   Never _handleDioError(DioException e) {
@@ -92,14 +188,18 @@ class RealApiService implements IApiService {
       _dio.options.headers['Authorization'] = 'Bearer $token';
 
   @override
-  void clearAuthToken() => _dio.options.headers.remove('Authorization');
+  void clearAuthToken() {
+    _sessionEpoch++;
+    _lastRenewedFromAuthorization = null;
+    _dio.options.headers.remove('Authorization');
+  }
 
   @override
   Future<AuthResponse> login(String username, String password) async {
     try {
-      final response = await _dio.post(
+      final response = await _postWithoutAuthorization(
         '/auth/mobile/login',
-        data: {'username': username.trim().toLowerCase(), 'password': password},
+        {'username': username.trim().toLowerCase(), 'password': password},
       );
       return AuthResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
@@ -110,12 +210,26 @@ class RealApiService implements IApiService {
   @override
   Future<AuthResponse> refresh(String refreshToken) async {
     try {
-      final response = await _dio.post(
+      final response = await _postWithoutAuthorization(
         '/auth/mobile/refresh',
-        data: {'refreshToken': refreshToken},
+        {'refreshToken': refreshToken},
       );
+      if (kDebugMode) {
+        debugPrint('POST /auth/mobile/refresh -> ${response.statusCode}');
+      }
       return AuthResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
+      if (kDebugMode) {
+        final data = e.response?.data;
+        final rawCode = data is Map<String, dynamic> ? data['code'] : null;
+        final code = rawCode is String &&
+                RegExp(r'^[A-Z][A-Z0-9_]{0,63}$').hasMatch(rawCode)
+            ? rawCode
+            : 'unavailable';
+        debugPrint(
+          'POST /auth/mobile/refresh -> ${e.response?.statusCode ?? 'network'} code=$code',
+        );
+      }
       _handleDioError(e);
     }
   }
@@ -146,90 +260,129 @@ class RealApiService implements IApiService {
 
   @override
   Future<UserModel> getProfile() async {
-    try {
-      final response = await _dio.get('/portal/my/profile');
-      return UserModel.fromJson(response.data as Map<String, dynamic>);
-    } on DioException catch (e) {
-      _handleDioError(e);
-    }
+    final response = await _get('/portal/my/profile');
+    return UserModel.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
   Future<List<OwnedDevice>> getMyDevices() async {
-    try {
-      final response = await _dio.get('/portal/my/devices');
-      final list = response.data as List<dynamic>;
-      return list
-          .map((e) => OwnedDevice.fromJson(e as Map<String, dynamic>))
-          .toList();
-    } on DioException catch (e) {
-      _handleDioError(e);
-    }
+    final response = await _get('/portal/my/devices');
+    final list = response.data as List<dynamic>;
+    return list
+        .map((e) => OwnedDevice.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   @override
   Future<PortalCatalog> getPortalCatalog() async {
-    try {
-      final response = await _dio.get('/portal/catalog');
-      return PortalCatalog.fromJson(response.data as Map<String, dynamic>);
-    } on DioException catch (e) {
-      _handleDioError(e);
-    }
+    final response = await _get('/portal/catalog');
+    return PortalCatalog.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
   Future<List<PortalRequestSummary>> getMyWarrantyRequests() async {
-    try {
-      final response = await _dio.get('/portal/my/warranty-requests');
-      return (response.data as List<dynamic>)
-          .map(
-            (item) =>
-                PortalRequestSummary.fromJson(item as Map<String, dynamic>),
-          )
-          .toList();
-    } on DioException catch (e) {
-      _handleDioError(e);
-    }
+    final response = await _get('/portal/my/warranty-requests');
+    return (response.data as List<dynamic>)
+        .map(
+          (item) => PortalRequestSummary.fromJson(item as Map<String, dynamic>),
+        )
+        .toList();
   }
 
   @override
   Future<PortalRequestDetail> getMyWarrantyRequest(String code) async {
-    try {
-      final response = await _dio.get(
-        '/portal/my/warranty-requests/${Uri.encodeComponent(code)}',
-      );
-      return PortalRequestDetail.fromJson(
-        response.data as Map<String, dynamic>,
-      );
-    } on DioException catch (e) {
-      _handleDioError(e);
-    }
+    final response = await _get(
+      '/portal/my/warranty-requests/${Uri.encodeComponent(code)}',
+    );
+    return PortalRequestDetail.fromJson(response.data as Map<String, dynamic>);
   }
 
   @override
   Future<List<PortalTicketSummary>> getMyTickets() async {
-    try {
-      final response = await _dio.get('/portal/my/tickets');
-      return (response.data as List<dynamic>)
-          .map(
-            (item) =>
-                PortalTicketSummary.fromJson(item as Map<String, dynamic>),
-          )
-          .toList();
-    } on DioException catch (e) {
-      _handleDioError(e);
-    }
+    final response = await _get('/portal/my/tickets');
+    return (response.data as List<dynamic>)
+        .map(
+          (item) => PortalTicketSummary.fromJson(item as Map<String, dynamic>),
+        )
+        .toList();
   }
 
   @override
   Future<PortalTicketDetail> getPortalTicket(String code) async {
+    final response = await _get('/portal/tickets/${Uri.encodeComponent(code)}');
+    return PortalTicketDetail.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  @override
+  Future<PortalNotificationInbox> getNotifications() async {
+    final response = await _get('/notifications');
+    return PortalNotificationInbox.fromJson(
+      response.data as Map<String, dynamic>,
+    );
+  }
+
+  @override
+  Future<void> markNotificationRead(String id) async {
     try {
-      final response = await _dio.get(
-        '/portal/tickets/${Uri.encodeComponent(code)}',
+      await _dio.post('/notifications/${Uri.encodeComponent(id)}/read');
+    } on DioException catch (error) {
+      _handleDioError(error);
+    }
+  }
+
+  @override
+  Future<PortalLookupRecord> lookupPortal(String code, String phone) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/portal/lookup',
+        data: {'code': code.trim().toUpperCase(), 'phone': phone.trim()},
+        options: Options(headers: {'Authorization': null}),
       );
-      return PortalTicketDetail.fromJson(response.data as Map<String, dynamic>);
-    } on DioException catch (e) {
-      _handleDioError(e);
+      final grant = response.data!;
+      final scope = grant['scope'] as String?;
+      final grantedCode = grant['code'] as String?;
+      final token = grant['accessToken'] as String?;
+      if (grantedCode == null || token == null || token.isEmpty) {
+        throw const ApiException('Phản hồi tra cứu không hợp lệ.');
+      }
+      // Keep the scoped token in this method. It must never replace the
+      // signed-in customer's token or be persisted with the session.
+      final path = switch (scope) {
+        'REQUEST' =>
+          '/portal/warranty-requests/${Uri.encodeComponent(grantedCode)}',
+        'TICKET' => '/portal/tickets/${Uri.encodeComponent(grantedCode)}',
+        _ => throw const ApiException('Phạm vi tra cứu không hợp lệ.'),
+      };
+      final detail = await _dio.get<Map<String, dynamic>>(
+        path,
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return scope == 'REQUEST'
+          ? PortalLookupRecord.request(
+              PortalRequestDetail.fromJson(detail.data!),
+            )
+          : PortalLookupRecord.ticket(
+              PortalTicketDetail.fromJson(detail.data!),
+            );
+    } on DioException catch (error) {
+      _handleDioError(error);
+    }
+  }
+
+  @override
+  Future<PortalTicketDetail> decidePortalQuotation(
+    String ticketCode,
+    String decision, {
+    String? reason,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/portal/tickets/${Uri.encodeComponent(ticketCode)}/quotation-decision',
+        data: {'decision': decision, 'reason': reason},
+      );
+      return PortalTicketDetail.fromJson(response.data!);
+    } on DioException catch (error) {
+      _handleDioError(error);
     }
   }
 

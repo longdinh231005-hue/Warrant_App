@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import '../../data/mock_data.dart';
 import '../../theme/app_theme.dart';
+import '../../viewmodels/auth_viewmodel.dart';
+import '../../widgets/notification_count_badge.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // MainShell
@@ -21,19 +25,29 @@ class MainShell extends StatelessWidget {
   final StatefulNavigationShell navigationShell;
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: navigationShell,
-      bottomNavigationBar: _WarrantSafeBottomNav(
-        currentIndex: navigationShell.currentIndex,
-        onTap: (index) => navigationShell.goBranch(
-          index,
-          // Re-tap current tab → go to branch initial location.
-          initialLocation: index == navigationShell.currentIndex,
+  Widget build(BuildContext context) => AnimatedBuilder(
+    animation: mockDataRevision,
+    builder: (context, _) {
+      final auth = context.watch<AuthViewModel>();
+      return Scaffold(
+        body: navigationShell,
+        bottomNavigationBar: _WarrantSafeBottomNav(
+          currentIndex: navigationShell.currentIndex,
+          unreadCount: auth.isMock
+              ? unreadNotificationCount
+              : auth.notificationUnreadCount,
+          notificationCountLoading:
+              !auth.isMock && auth.notificationCountLoading,
+          notificationCountError: !auth.isMock && auth.notificationCountError,
+          onTap: (index) => navigationShell.goBranch(
+            index,
+            // Re-tap current tab → go to branch initial location.
+            initialLocation: index == navigationShell.currentIndex,
+          ),
         ),
-      ),
-    );
-  }
+      );
+    },
+  );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,10 +58,16 @@ class _WarrantSafeBottomNav extends StatelessWidget {
   const _WarrantSafeBottomNav({
     required this.currentIndex,
     required this.onTap,
+    required this.unreadCount,
+    required this.notificationCountLoading,
+    required this.notificationCountError,
   });
 
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final int? unreadCount;
+  final bool notificationCountLoading;
+  final bool notificationCountError;
 
   static const _items = [
     _NavItem(
@@ -100,6 +120,10 @@ class _WarrantSafeBottomNav extends StatelessWidget {
                 child: _NavButton(
                   item: item,
                   isActive: isActive,
+                  notificationBadge: index == 3,
+                  unreadCount: unreadCount,
+                  notificationCountLoading: notificationCountLoading,
+                  notificationCountError: notificationCountError,
                   onTap: () => onTap(index),
                 ),
               );
@@ -126,11 +150,19 @@ class _NavButton extends StatelessWidget {
   const _NavButton({
     required this.item,
     required this.isActive,
+    required this.notificationBadge,
+    required this.unreadCount,
+    required this.notificationCountLoading,
+    required this.notificationCountError,
     required this.onTap,
   });
 
   final _NavItem item;
   final bool isActive;
+  final bool notificationBadge;
+  final int? unreadCount;
+  final bool notificationCountLoading;
+  final bool notificationCountError;
   final VoidCallback onTap;
 
   @override
@@ -144,10 +176,15 @@ class _NavButton extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              isActive ? item.activeIcon : item.icon,
-              size: 24,
-              color: isActive ? AppColors.primaryBlue : AppColors.textHint,
+            NotificationCountBadge(
+              count: notificationBadge ? unreadCount : null,
+              loading: notificationBadge && notificationCountLoading,
+              error: notificationBadge && notificationCountError,
+              child: Icon(
+                isActive ? item.activeIcon : item.icon,
+                size: 24,
+                color: isActive ? AppColors.primaryBlue : AppColors.textHint,
+              ),
             ),
             const SizedBox(height: 3),
             Text(

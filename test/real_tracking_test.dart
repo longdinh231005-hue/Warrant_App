@@ -7,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:warrant_safe/models/portal_request_models.dart';
 import 'package:warrant_safe/models/portal_ticket_models.dart';
+import 'package:warrant_safe/models/portal_lookup_models.dart';
+import 'package:warrant_safe/models/portal_notification_models.dart';
 import 'package:warrant_safe/models/user_model.dart';
 import 'package:warrant_safe/router/app_router.dart';
 import 'package:warrant_safe/services/i_api_service.dart';
@@ -67,7 +69,7 @@ Map<String, dynamic> _ticketJson({bool pendingQuote = false}) => {
       ? {
           'code': 'BG-1',
           'validUntil': '2026-10-20',
-          'vatRate': 0.1,
+          'vatRate': 10,
           'lines': [
             {
               'lineNo': 1,
@@ -130,6 +132,12 @@ class _MemoryStorage implements TokenStorage {
 }
 
 class _FakeApi implements IApiService {
+  @override
+  Future<PortalNotificationInbox> getNotifications() async =>
+      const PortalNotificationInbox([], 0);
+
+  @override
+  Future<void> markNotificationRead(String id) async {}
   bool failTicketsOnce = false;
   Object? requestError;
   Object? ticketError;
@@ -137,6 +145,8 @@ class _FakeApi implements IApiService {
   String? lastTicketCode;
   List<PortalTicketSummary> tickets = [];
   PortalTicketDetail detail = PortalTicketDetail.fromJson(_ticketJson());
+  String? lastDecision;
+  String? lastReason;
 
   @override
   Future<AuthResponse> login(String username, String password) async =>
@@ -186,6 +196,27 @@ class _FakeApi implements IApiService {
   Future<PortalTicketDetail> getPortalTicket(String code) async {
     lastTicketCode = code;
     if (ticketError != null) throw ticketError!;
+    return detail;
+  }
+
+  @override
+  Future<PortalLookupRecord> lookupPortal(String code, String phone) async =>
+      PortalLookupRecord.request(request);
+
+  @override
+  Future<PortalTicketDetail> decidePortalQuotation(
+    String ticketCode,
+    String decision, {
+    String? reason,
+  }) async {
+    lastDecision = decision;
+    lastReason = reason;
+    final response = _ticketJson();
+    response['status'] = decision == 'DECLINE'
+        ? 'AWAITING_RETURN'
+        : 'REPAIRING';
+    response['stopped'] = decision == 'DECLINE';
+    detail = PortalTicketDetail.fromJson(response);
     return detail;
   }
 
@@ -363,7 +394,9 @@ void main() {
     expect(find.text('Phiếu tiếp nhận'), findsOneWidget);
   });
 
-  testWidgets('pending quotation fixture is read only', (tester) async {
+  testWidgets('approved pending quotation fixture displays decision actions', (
+    tester,
+  ) async {
     final api = _FakeApi()
       ..detail = PortalTicketDetail.fromJson(_ticketJson(pendingQuote: true));
     final auth = await _auth(api);
@@ -382,10 +415,112 @@ void main() {
       300,
     );
     expect(find.text('Báo giá chờ khách quyết định'), findsOneWidget);
+    expect(find.text('VAT (10%): 25000 VNĐ'), findsOneWidget);
     await tester.scrollUntilVisible(find.text('Tổng báo giá: 275000 VNĐ'), 300);
     expect(find.text('Tổng báo giá: 275000 VNĐ'), findsOneWidget);
     expect(find.text('ĐỒNG Ý'), findsNothing);
     expect(find.text('TỪ CHỐI'), findsNothing);
+  });
+
+  testWidgets('stopped ticket does not show an active repair step', (
+    tester,
+  ) async {
+    final data = _ticketJson()
+      ..['status'] = 'AWAITING_RETURN'
+      ..['stopped'] = true;
+    final api = _FakeApi()..detail = PortalTicketDetail.fromJson(data);
+    final auth = await _auth(api);
+    addTearDown(auth.dispose);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthViewModel>.value(
+        value: auth,
+        child: const MaterialApp(home: RealTicketDetailScreen(code: 'TN-OLD')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text(
+        'Phiếu đã dừng xử lý; hiện không có bước sửa chữa đang thực hiện.',
+      ),
+      300,
+    );
+    expect(find.text('Hiện tại · Chẩn đoán'), findsNothing);
+  });
+
+  testWidgets('customer decline requires reason and confirmation', (
+    tester,
+  ) async {
+    final api = _FakeApi()
+      ..detail = PortalTicketDetail.fromJson(_ticketJson(pendingQuote: true));
+    final auth = await _auth(api);
+    addTearDown(auth.dispose);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthViewModel>.value(
+        value: auth,
+        child: const MaterialApp(home: RealTicketDetailScreen(code: 'TN-OLD')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Từ chối'), 300);
+    await tester.ensureVisible(find.text('Từ chối'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Từ chối'));
+    await tester.pumpAndSettle();
+    expect(find.text('Xác nhận'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, 'Xác nhận'))
+          .onPressed,
+      isNull,
+    );
+    await tester.enterText(
+      find.byType(TextField).last,
+      'Không sửa trong mô phỏng',
+    );
+    await tester.pump();
+    await tester.tap(find.text('Xác nhận'));
+    await tester.pumpAndSettle();
+    expect(api.lastDecision, 'DECLINE');
+    expect(api.lastReason, 'Không sửa trong mô phỏng');
+    expect(api.detail.status, 'AWAITING_RETURN');
+    await tester.drag(find.byType(ListView), const Offset(0, 2000));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Chờ trả thiết bị'), findsWidgets);
+    expect(find.text('Từ chối'), findsNothing);
+  });
+
+  testWidgets('customer accept requires confirmation and uses server status', (
+    tester,
+  ) async {
+    final api = _FakeApi()
+      ..detail = PortalTicketDetail.fromJson(_ticketJson(pendingQuote: true));
+    final auth = await _auth(api);
+    addTearDown(auth.dispose);
+    await tester.pumpWidget(
+      ChangeNotifierProvider<AuthViewModel>.value(
+        value: auth,
+        child: const MaterialApp(home: RealTicketDetailScreen(code: 'TN-OLD')),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.text('Đồng ý'), 300);
+    await tester.ensureVisible(find.text('Đồng ý'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Đồng ý'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Hủy'));
+    await tester.pumpAndSettle();
+    expect(api.lastDecision, isNull);
+    await tester.tap(find.text('Đồng ý'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Xác nhận'));
+    await tester.pumpAndSettle();
+    expect(api.lastDecision, 'ACCEPT');
+    expect(api.detail.status, 'REPAIRING');
+    await tester.drag(find.byType(ListView), const Offset(0, 2000));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Đang sửa chữa'), findsWidgets);
+    expect(find.text('Đồng ý'), findsNothing);
   });
 
   testWidgets('404 ownership responses show no other customer data', (

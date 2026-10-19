@@ -23,6 +23,15 @@ class RequestListScreen extends StatelessWidget {
 
   Widget _buildBody(BuildContext context) {
     final isMock = context.select<AuthViewModel, bool>((vm) => vm.isMock);
+    final unreadCount = context.select<AuthViewModel, int?>(
+      (vm) => vm.notificationUnreadCount,
+    );
+    final notificationCountLoading = context.select<AuthViewModel, bool>(
+      (vm) => vm.notificationCountLoading,
+    );
+    final notificationCountError = context.select<AuthViewModel, bool>(
+      (vm) => vm.notificationCountError,
+    );
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -31,7 +40,9 @@ class RequestListScreen extends StatelessWidget {
         child: Column(
           children: [
             WarrantSafeAppBar(
-              unreadCount: isMock ? unreadNotificationCount : 0,
+              unreadCount: isMock ? unreadNotificationCount : unreadCount,
+              notificationCountLoading: !isMock && notificationCountLoading,
+              notificationCountError: !isMock && notificationCountError,
               onNotificationTap: () => context.go(AppRoutes.notifications),
             ),
             const Divider(height: 1),

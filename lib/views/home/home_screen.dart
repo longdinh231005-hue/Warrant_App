@@ -41,6 +41,15 @@ class HomeScreen extends StatelessWidget {
     final firstName = _firstName(user?.fullName);
 
     final isMock = context.select<AuthViewModel, bool>((vm) => vm.isMock);
+    final unreadCount = context.select<AuthViewModel, int?>(
+      (vm) => vm.notificationUnreadCount,
+    );
+    final notificationCountLoading = context.select<AuthViewModel, bool>(
+      (vm) => vm.notificationCountLoading,
+    );
+    final notificationCountError = context.select<AuthViewModel, bool>(
+      (vm) => vm.notificationCountError,
+    );
 
     final actions = isMock ? actionRequiredRequests : <MockRequest>[];
     final recent = isMock ? mockRequests.take(3).toList() : <MockRequest>[];
@@ -53,7 +62,9 @@ class HomeScreen extends StatelessWidget {
           children: [
             // ── App bar ─────────────────────────────────────────────
             WarrantSafeAppBar(
-              unreadCount: isMock ? unreadNotificationCount : 0,
+              unreadCount: isMock ? unreadNotificationCount : unreadCount,
+              notificationCountLoading: !isMock && notificationCountLoading,
+              notificationCountError: !isMock && notificationCountError,
               onNotificationTap: () => context.go(AppRoutes.notifications),
             ),
             const Divider(height: 1),

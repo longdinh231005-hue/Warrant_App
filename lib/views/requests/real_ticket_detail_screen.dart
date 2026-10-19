@@ -6,6 +6,8 @@ import '../../router/app_router.dart';
 import '../../services/i_api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../viewmodels/request_viewmodel.dart';
+import '../../viewmodels/ticket_viewmodel.dart';
 import '../../widgets/app_bar_widget.dart';
 
 class RealTicketDetailScreen extends StatefulWidget {
@@ -20,6 +22,9 @@ class _RealTicketDetailScreenState extends State<RealTicketDetailScreen> {
   PortalTicketDetail? _ticket;
   String? _error;
   bool _loading = true;
+  bool _deciding = false;
+  bool _decisionUncertain = false;
+  String? _decisionMessage;
 
   @override
   void initState() {
@@ -40,6 +45,7 @@ class _RealTicketDetailScreenState extends State<RealTicketDetailScreen> {
       setState(() {
         _ticket = ticket;
         _loading = false;
+        _decisionUncertain = false;
       });
     } catch (error) {
       if (!mounted) return;
@@ -54,6 +60,95 @@ class _RealTicketDetailScreenState extends State<RealTicketDetailScreen> {
 
   void _back() =>
       context.canPop() ? context.pop() : context.go(AppRoutes.requests);
+
+  Future<void> _decide(String decision) async {
+    if (_deciding || _decisionUncertain || _ticket?.pendingQuotation == null) {
+      return;
+    }
+    final quote = _ticket!.pendingQuotation!;
+    var reasonText = '';
+    try {
+      final reason = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (dialogContext, update) => AlertDialog(
+            title: Text(
+              decision == 'ACCEPT' ? 'Đồng ý báo giá?' : 'Từ chối báo giá?',
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Mã ${quote.code} · Tổng ${_money(quote.grandTotal)}'),
+                const SizedBox(height: 8),
+                const Text(
+                  'Quyết định sẽ được ghi nhận trên hệ thống. Trạng thái tiếp theo do máy chủ trả về.',
+                ),
+                if (decision == 'DECLINE') ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    maxLength: 500,
+                    onChanged: (value) => update(() => reasonText = value),
+                    decoration: const InputDecoration(
+                      labelText: 'Lý do từ chối *',
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Hủy'),
+              ),
+              FilledButton(
+                onPressed: decision == 'DECLINE' && reasonText.trim().isEmpty
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(reasonText.trim()),
+                child: const Text('Xác nhận'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (!mounted || reason == null) return;
+      setState(() {
+        _deciding = true;
+        _decisionMessage = null;
+      });
+      try {
+        final updated = await context
+            .read<AuthViewModel>()
+            .decidePortalQuotation(
+              widget.code,
+              decision,
+              reason: decision == 'DECLINE' ? reason : null,
+            );
+        if (!mounted) return;
+        setState(() {
+          _ticket = updated;
+          _decisionMessage =
+              'Máy chủ đã ghi nhận quyết định. Trạng thái phiếu: ${portalTicketStatusLabel(updated.status)}.';
+        });
+        // Refresh the list state from GETs; never infer a status from the tap.
+        Provider.of<TicketViewModel?>(context, listen: false)?.refresh();
+        Provider.of<RequestViewModel?>(context, listen: false)?.refresh();
+      } on ApiException catch (error) {
+        if (!mounted) return;
+        setState(() {
+          _decisionUncertain =
+              error.statusCode == null || error.statusCode == 409;
+          _decisionMessage = error.statusCode == 409
+              ? 'Báo giá đã có quyết định hoặc không còn chờ xác nhận. Tải lại phiếu trước khi thao tác tiếp.'
+              : error.statusCode == null
+              ? 'Chưa rõ máy chủ đã ghi nhận hay chưa. Tải lại phiếu để kiểm tra trước khi thao tác tiếp.'
+              : 'Chưa ghi nhận quyết định (${error.statusCode}): ${error.message}';
+        });
+      }
+    } finally {
+      if (mounted) setState(() => _deciding = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -111,6 +206,18 @@ class _RealTicketDetailScreenState extends State<RealTicketDetailScreen> {
           if (ticket.handedOverAt != null)
             Text('Bàn giao lúc: ${_dateTime(ticket.handedOverAt!)}'),
         ]),
+        if (_decisionMessage != null) ...[
+          const SizedBox(height: 12),
+          Text(
+            _decisionMessage!,
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+          if (_decisionUncertain)
+            OutlinedButton(
+              onPressed: _load,
+              child: const Text('Tải lại phiếu'),
+            ),
+        ],
         const SizedBox(height: 16),
         _card([
           const Text('Thiết bị', style: TextStyle(fontWeight: FontWeight.w700)),
@@ -132,11 +239,16 @@ class _RealTicketDetailScreenState extends State<RealTicketDetailScreen> {
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 8),
-          for (final step in ticket.steps)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Text('${_stepState(step.state)} · ${step.label}'),
-            ),
+          if (ticket.stopped)
+            const Text(
+              'Phiếu đã dừng xử lý; hiện không có bước sửa chữa đang thực hiện.',
+            )
+          else
+            for (final step in ticket.steps)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text('${_stepState(step.state)} · ${step.label}'),
+              ),
         ]),
         const SizedBox(height: 16),
         _card([
@@ -182,10 +294,41 @@ class _RealTicketDetailScreenState extends State<RealTicketDetailScreen> {
             const Divider(),
             Text('Linh kiện: ${_money(quote.partsTotal)}'),
             Text('Tiền công: ${_money(quote.laborTotal)}'),
+            Text(
+              'VAT (${quote.vatRate}%): ${_money(quote.grandTotal - quote.partsTotal - quote.laborTotal)}',
+            ),
             Text('Tổng báo giá: ${_money(quote.grandTotal)}'),
             const SizedBox(height: 8),
             const Text(
-              'Chức năng đồng ý/từ chối báo giá Real chưa mở trong ứng dụng.',
+              'Báo giá đã duyệt nội bộ và đang chờ quyết định của khách hàng.',
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _deciding || _decisionUncertain
+                        ? null
+                        : () => _decide('DECLINE'),
+                    child: const Text('Từ chối'),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: _deciding || _decisionUncertain
+                        ? null
+                        : () => _decide('ACCEPT'),
+                    child: _deciding
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Đồng ý'),
+                  ),
+                ),
+              ],
             ),
           ]),
         ],

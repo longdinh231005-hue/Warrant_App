@@ -18,6 +18,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   // ── Form ──────────────────────────────────────────────────────────
   final _formKey = GlobalKey<FormState>();
+  final _apiUrlEditorKey = GlobalKey<_ApiUrlEditorState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
@@ -36,6 +37,10 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final vm = context.read<AuthViewModel>();
+    if (!vm.isMock && kDebugMode) {
+      final editor = _apiUrlEditorKey.currentState;
+      if (editor != null && !await editor.apply(showSuccess: false)) return;
+    }
     await vm.loginUser(_emailCtrl.text.trim(), _passwordCtrl.text);
 
     // GoRouter's refreshListenable fires when isAuthenticated changes.
@@ -372,7 +377,7 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  /// Small card showing mock credentials – visible during development only.
+  /// Small card showing demo credentials – visible during development only.
   Widget _buildDemoHint() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -464,7 +469,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!vm.isMock) ...[
             const SizedBox(height: 8),
             if (kDebugMode)
-              _ApiUrlEditor(initialUrl: vm.baseUrl)
+              _ApiUrlEditor(key: _apiUrlEditorKey, initialUrl: vm.baseUrl)
             else
               TextFormField(
                 initialValue: vm.baseUrl,
@@ -483,7 +488,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
 class _ApiUrlEditor extends StatefulWidget {
   final String initialUrl;
-  const _ApiUrlEditor({required this.initialUrl});
+  const _ApiUrlEditor({super.key, required this.initialUrl});
 
   @override
   State<_ApiUrlEditor> createState() => _ApiUrlEditorState();
@@ -513,10 +518,10 @@ class _ApiUrlEditorState extends State<_ApiUrlEditor> {
     super.dispose();
   }
 
-  void _apply() async {
+  Future<bool> apply({bool showSuccess = true}) async {
     try {
       await context.read<AuthViewModel>().setBaseUrl(_ctrl.text.trim());
-      if (mounted) {
+      if (showSuccess && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Đã cập nhật Base URL'),
@@ -524,6 +529,7 @@ class _ApiUrlEditorState extends State<_ApiUrlEditor> {
           ),
         );
       }
+      return true;
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -533,6 +539,7 @@ class _ApiUrlEditorState extends State<_ApiUrlEditor> {
           ),
         );
       }
+      return false;
     }
   }
 
@@ -547,16 +554,17 @@ class _ApiUrlEditorState extends State<_ApiUrlEditor> {
               labelText: 'Base URL',
               isDense: true,
             ),
-            onFieldSubmitted: (_) => _apply(),
+            onFieldSubmitted: (_) => apply(),
           ),
         ),
         const SizedBox(width: 8),
         IconButton(
+          tooltip: 'Áp dụng Base URL',
           icon: const Icon(
             Icons.check_circle_outline,
             color: AppColors.primaryBlue,
           ),
-          onPressed: _apply,
+          onPressed: apply,
         ),
       ],
     );

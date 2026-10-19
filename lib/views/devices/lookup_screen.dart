@@ -6,6 +6,7 @@ import '../../data/mock_data.dart';
 import '../../router/app_router.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import 'real_lookup_screen.dart';
 
 class LookupScreen extends StatefulWidget {
   const LookupScreen({super.key});
@@ -67,6 +68,9 @@ class _LookupScreenState extends State<LookupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (!context.watch<AuthViewModel>().isMock) {
+      return const RealLookupScreen();
+    }
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(

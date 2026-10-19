@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../../theme/app_theme.dart';
+import '../theme/app_theme.dart';
+import 'notification_count_badge.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WarrantSafeAppBar
@@ -15,10 +16,14 @@ class WarrantSafeAppBar extends StatelessWidget {
   const WarrantSafeAppBar({
     super.key,
     this.unreadCount = 0,
+    this.notificationCountLoading = false,
+    this.notificationCountError = false,
     this.onNotificationTap,
   });
 
-  final int unreadCount;
+  final int? unreadCount;
+  final bool notificationCountLoading;
+  final bool notificationCountError;
   final VoidCallback? onNotificationTap;
 
   @override
@@ -37,51 +42,23 @@ class WarrantSafeAppBar extends StatelessWidget {
             GestureDetector(
               onTap: onNotificationTap,
               behavior: HitTestBehavior.opaque,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.inputFill,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.notifications_none_rounded,
-                      size: 22,
-                      color: AppColors.textPrimary,
-                    ),
+              child: NotificationCountBadge(
+                count: unreadCount,
+                loading: notificationCountLoading,
+                error: notificationCountError,
+                child: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    color: AppColors.inputFill,
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  if (unreadCount > 0)
-                    Positioned(
-                      top: -4,
-                      right: -4,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 5,
-                          vertical: 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.error,
-                          borderRadius: BorderRadius.circular(10),
-                          border: Border.all(
-                            color: AppColors.white,
-                            width: 1.5,
-                          ),
-                        ),
-                        child: Text(
-                          unreadCount > 9 ? '9+' : '$unreadCount',
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                            height: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
+                  child: const Icon(
+                    Icons.notifications_none_rounded,
+                    size: 22,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
               ),
             ),
         ],
