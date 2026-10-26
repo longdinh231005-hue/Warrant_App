@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../models/portal_request_models.dart';
@@ -10,8 +12,8 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/request_viewmodel.dart';
 import '../../widgets/app_bar_widget.dart';
 
-/// Real customer submission. The device comes only from /portal/my/devices;
-/// catalog codes are chosen explicitly because OwnedDevice has no type code.
+/// Real customer submission. An owned device can be selected, or a new
+/// device's identity can be included in the request for staff to verify.
 class RealCreateRequestScreen extends StatefulWidget {
   const RealCreateRequestScreen({super.key, this.prefilledDevice});
   final OwnedDevice? prefilledDevice;
@@ -23,12 +25,16 @@ class RealCreateRequestScreen extends StatefulWidget {
 
 class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
   final _symptomController = TextEditingController();
+  final _brandModelController = TextEditingController();
+  final _serialController = TextEditingController();
   PortalCatalog? _catalog;
   List<OwnedDevice> _devices = [];
   OwnedDevice? _device;
   String? _categoryCode;
   String? _deviceTypeCode;
   String? _stationCode;
+  DateTime? _preferredFrom;
+  List<RequestAttachment> _attachments = [];
   Map<String, String> _errors = {};
   String? _loadError;
   String? _submitError;
@@ -36,6 +42,7 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
   bool _loading = true;
   bool _submitting = false;
   bool _uncertain = false;
+  bool _manualDevice = false;
 
   @override
   void initState() {
@@ -46,6 +53,8 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
   @override
   void dispose() {
     _symptomController.dispose();
+    _brandModelController.dispose();
+    _serialController.dispose();
     super.dispose();
   }
 
@@ -93,6 +102,7 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
   }
 
   List<PortalCategory> get _categories {
+    if (_manualDevice) return _catalog?.categories ?? [];
     final identifier = _device?.identifierType.toUpperCase();
     return (_catalog?.categories ?? [])
         .where(
@@ -103,10 +113,9 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
         .toList();
   }
 
-  List<PortalDeviceType> get _types {
-    final category = _categories
-        .where((item) => item.code == _categoryCode)
-        .firstOrNull;
+  List<PortalDeviceType> _typesForCategory(String? code) {
+    final category = _categories.where((item) => item.code == code).firstOrNull;
+    if (_manualDevice) return category?.deviceTypes ?? [];
     return category?.deviceTypes
             .where(
               (type) =>
@@ -117,30 +126,140 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
         [];
   }
 
+  List<PortalDeviceType> get _types => _typesForCategory(_categoryCode);
+
+  Future<void> _pickPreferredTime() async {
+    final now = DateTime.now();
+    final day = await showDatePicker(
+      context: context,
+      initialDate: _preferredFrom?.isAfter(now) == true
+          ? _preferredFrom!
+          : now.add(const Duration(days: 1)),
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(2100),
+      helpText: 'Ngày mong muốn mang máy tới',
+    );
+    if (!mounted || day == null) return;
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_preferredFrom ?? now),
+      helpText: 'Giờ mong muốn mang máy tới',
+    );
+    if (!mounted || time == null) return;
+    setState(() {
+      _preferredFrom = DateTime(
+        day.year,
+        day.month,
+        day.day,
+        time.hour,
+        time.minute,
+      );
+      _errors.remove('preferredFrom');
+    });
+  }
+
+  String get _preferredTimeLabel {
+    final value = _preferredFrom;
+    if (value == null) return 'Chọn ngày và giờ';
+    String two(int number) => number.toString().padLeft(2, '0');
+    return '${two(value.day)}/${two(value.month)}/${value.year} '
+        '${two(value.hour)}:${two(value.minute)}';
+  }
+
+  Future<void> _pickAttachments() async {
+    try {
+      final picked = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: const ['jpg', 'jpeg', 'png', 'webp', 'mp4'],
+        allowMultiple: true,
+        withData: kIsWeb,
+      );
+      if (!mounted || picked == null) return;
+      final files = <RequestAttachment>[];
+      for (final file in picked.files) {
+        if (file.path == null && file.bytes == null) {
+          setState(() => _errors['files'] = 'Không đọc được tệp đã chọn.');
+          return;
+        }
+        files.add(
+          RequestAttachment(
+            name: file.name,
+            length: file.size,
+            openRead: () => file.xFile.openRead(),
+          ),
+        );
+      }
+      final error = RequestAttachment.validateSelection(files);
+      setState(() {
+        if (error == null) {
+          _attachments = files;
+          _errors.remove('files');
+        } else {
+          _errors['files'] = error;
+        }
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(
+          () => _errors['files'] = 'Không thể chọn tệp. Vui lòng thử lại.',
+        );
+      }
+    }
+  }
+
   Future<void> _submit() async {
     if (_submitting || _uncertain || _catalog == null) return;
     FocusScope.of(context).unfocus();
-    final errors = OwnWarrantyRequestData.validate(
-      device: _device,
-      catalog: _catalog!,
-      categoryCode: _categoryCode,
-      deviceTypeCode: _deviceTypeCode,
-      stationCode: _stationCode,
-      symptom: _symptomController.text,
+    final errors = _manualDevice
+        ? OwnWarrantyRequestData.validateUnregistered(
+            catalog: _catalog!,
+            categoryCode: _categoryCode,
+            deviceTypeCode: _deviceTypeCode,
+            brandModel: _brandModelController.text,
+            serialOrImei: _serialController.text,
+            stationCode: _stationCode,
+            symptom: _symptomController.text,
+          )
+        : OwnWarrantyRequestData.validate(
+            device: _device,
+            catalog: _catalog!,
+            categoryCode: _categoryCode,
+            deviceTypeCode: _deviceTypeCode,
+            stationCode: _stationCode,
+            symptom: _symptomController.text,
+          );
+    final timeError = OwnWarrantyRequestData.validatePreferredArrival(
+      _preferredFrom,
+      DateTime.now(),
     );
+    if (timeError != null) errors['preferredFrom'] = timeError;
+    final filesError = RequestAttachment.validateSelection(_attachments);
+    if (filesError != null) errors['files'] = filesError;
     if (errors.isNotEmpty) {
       setState(() => _errors = errors);
       return;
     }
-    final device = _device!;
+    final device = _device;
+    final selectedType = _types
+        .where((type) => type.code == _deviceTypeCode)
+        .firstOrNull;
     final data = OwnWarrantyRequestData(
       categoryCode: _categoryCode!,
       deviceTypeCode: _deviceTypeCode!,
-      brandModel: OwnWarrantyRequestData.brandModelOf(device),
-      identifierType: device.identifierType.toUpperCase(),
-      serialOrImei: device.serialOrImei.trim(),
+      brandModel: _manualDevice
+          ? _brandModelController.text.trim()
+          : OwnWarrantyRequestData.brandModelOf(device!),
+      identifierType: _manualDevice
+          ? selectedType!.identifierType.toUpperCase()
+          : device!.identifierType.toUpperCase(),
+      serialOrImei: _manualDevice
+          ? _serialController.text.trim()
+          : device!.serialOrImei.trim(),
       symptom: _symptomController.text.trim(),
       preferredStation: _stationCode!,
+      preferredFrom: _preferredFrom,
+      preferredTo: _preferredFrom!.add(const Duration(hours: 1)),
+      attachments: _attachments,
     );
     setState(() {
       _submitting = true;
@@ -196,6 +315,8 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
       'serialOrImei' => 'Serial/IMEI',
       'symptom' => 'Mô tả lỗi',
       'preferredStation' => 'Trạm dịch vụ',
+      'preferredFrom' || 'preferredTo' => 'Thời gian mong muốn',
+      'files' => 'Tệp đính kèm',
       _ => field,
     };
     final english = backendMessage.toLowerCase();
@@ -259,9 +380,29 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
           style: TextStyle(color: AppColors.textSecondary),
         ),
         const SizedBox(height: 16),
+        if (widget.prefilledDevice == null) ...[
+          TextButton.icon(
+            onPressed: () => setState(() {
+              _manualDevice = !_manualDevice;
+              _device = null;
+              _categoryCode = null;
+              _deviceTypeCode = null;
+              _errors = {};
+            }),
+            icon: Icon(
+              _manualDevice ? Icons.list_alt : Icons.add_circle_outline,
+            ),
+            label: Text(
+              _manualDevice
+                  ? 'Chọn thiết bị đã có trong tài khoản'
+                  : 'Thiết bị chưa có trong danh sách? Nhập thông tin',
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
         if (widget.prefilledDevice != null && device != null)
           _deviceIdentity(device)
-        else
+        else if (!_manualDevice)
           _select(
             'Thiết bị của bạn *',
             device?.code,
@@ -284,19 +425,22 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
             }),
             _errors['device'],
           ),
-        if (device == null && _devices.isEmpty) ...[
+        if (!_manualDevice && device == null && _devices.isEmpty) ...[
           const SizedBox(height: 8),
           const Text(
-            'Tài khoản chưa có thiết bị sở hữu để gửi yêu cầu từ ứng dụng.',
+            'Tài khoản chưa có thiết bị sở hữu. Bạn có thể nhập thông tin thiết bị mới ở trên.',
           ),
         ],
         const SizedBox(height: 16),
-        if (device != null) ...[
-          if (widget.prefilledDevice == null) _deviceIdentity(device),
+        if (device != null || _manualDevice) ...[
+          if (widget.prefilledDevice == null && device != null)
+            _deviceIdentity(device),
           const SizedBox(height: 16),
-          const Text(
-            'Chọn loại thiết bị trong danh mục của trung tâm. Mã loại không có trong hồ sơ thiết bị nên cần bạn xác nhận.',
-            style: TextStyle(color: AppColors.textSecondary),
+          Text(
+            _manualDevice
+                ? 'Thông tin thiết bị mới sẽ được lễ tân kiểm tra khi tiếp nhận; gửi yêu cầu không đăng ký hoặc kích hoạt bảo hành.'
+                : 'Chọn loại thiết bị trong danh mục của trung tâm. Mã loại không có trong hồ sơ thiết bị nên cần bạn xác nhận.',
+            style: const TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 16),
           _select(
@@ -312,31 +456,69 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
                 .toList(),
             (code) => setState(() {
               _categoryCode = code;
-              _deviceTypeCode = null;
+              final types = _typesForCategory(code);
+              _deviceTypeCode = types.length == 1 ? types.single.code : null;
               _errors = {};
             }),
             _errors['categoryCode'],
           ),
-          const SizedBox(height: 16),
-          _select(
-            'Loại thiết bị *',
-            _deviceTypeCode,
-            _types
-                .map(
-                  (item) => DropdownMenuItem(
-                    value: item.code,
-                    child: Text(item.name),
-                  ),
-                )
-                .toList(),
-            _categoryCode == null
-                ? null
-                : (code) => setState(() {
-                    _deviceTypeCode = code;
-                    _errors = {};
-                  }),
-            _errors['deviceTypeCode'],
-          ),
+          if (_types.length > 1) ...[
+            const SizedBox(height: 16),
+            _select(
+              'Loại thiết bị *',
+              _deviceTypeCode,
+              _types
+                  .map(
+                    (item) => DropdownMenuItem(
+                      value: item.code,
+                      child: Text(item.name),
+                    ),
+                  )
+                  .toList(),
+              (code) => setState(() {
+                _deviceTypeCode = code;
+                _errors.remove('deviceTypeCode');
+              }),
+              _errors['deviceTypeCode'],
+            ),
+          ] else if (_types.length == 1) ...[
+            const SizedBox(height: 8),
+            Text('Loại theo danh mục: ${_types.single.name}'),
+          ] else if (_categoryCode != null) ...[
+            const SizedBox(height: 8),
+            const Text('Nhóm này chưa có loại thiết bị phù hợp.'),
+          ],
+          if (_manualDevice) ...[
+            const SizedBox(height: 16),
+            TextFormField(
+              key: const ValueKey('manual-brand-model'),
+              controller: _brandModelController,
+              onChanged: (_) => setState(() => _errors.remove('brandModel')),
+              decoration: InputDecoration(
+                labelText: 'Hãng và model *',
+                errorText: _errors['brandModel'],
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              key: const ValueKey('manual-serial'),
+              controller: _serialController,
+              textCapitalization: TextCapitalization.characters,
+              onChanged: (_) => setState(() => _errors.remove('serialOrImei')),
+              decoration: InputDecoration(
+                labelText:
+                    _types
+                            .where((type) => type.code == _deviceTypeCode)
+                            .firstOrNull
+                            ?.identifierType
+                            .toUpperCase() ==
+                        'IMEI'
+                    ? 'IMEI *'
+                    : 'Serial/IMEI *',
+                errorText: _errors['serialOrImei'],
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           const Text(
             'Mô tả lỗi *',
@@ -344,6 +526,7 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
           ),
           const SizedBox(height: 8),
           TextFormField(
+            key: const ValueKey('request-symptom'),
             controller: _symptomController,
             maxLines: 5,
             minLines: 3,
@@ -372,9 +555,53 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
             }),
             _errors['preferredStation'],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           const Text(
-            'Ảnh và khoảng thời gian mong muốn là tùy chọn theo API. Phiên bản này gửi yêu cầu không kèm ảnh hoặc thời gian hẹn.',
+            'Thời gian mong muốn mang máy tới *',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            key: const ValueKey('preferred-arrival-picker'),
+            onPressed: _pickPreferredTime,
+            icon: const Icon(Icons.calendar_today_outlined),
+            label: Text(_preferredTimeLabel),
+          ),
+          if (_errors['preferredFrom'] != null)
+            Text(
+              _errors['preferredFrom']!,
+              style: const TextStyle(color: AppColors.error),
+            ),
+          const SizedBox(height: 8),
+          const Text(
+            'Khoảng thời gian gửi tới trạm là 1 giờ kể từ thời điểm đã chọn. Đây là mong muốn, chưa phải lịch hẹn được xác nhận.',
+            style: TextStyle(color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 24),
+          _ownerSummary(),
+          const SizedBox(height: 16),
+          const Text('Ảnh/video lỗi (tối đa 3 tệp)'),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: _submitting ? null : _pickAttachments,
+            icon: const Icon(Icons.attach_file),
+            label: Text(_attachments.isEmpty ? 'Chọn tệp' : 'Chọn lại tệp'),
+          ),
+          for (final file in _attachments) Text(file.name),
+          if (_attachments.isNotEmpty)
+            TextButton(
+              onPressed: _submitting
+                  ? null
+                  : () => setState(() => _attachments = []),
+              child: const Text('Bỏ tệp đã chọn'),
+            ),
+          if (_errors['files'] != null)
+            Text(
+              _errors['files']!,
+              style: const TextStyle(color: AppColors.error),
+            ),
+          const Text(
+            'Tệp không bắt buộc. Chỉ nhận JPEG/PNG/WebP tối đa 5 MiB mỗi ảnh hoặc MP4 tối đa 30 MiB; máy chủ sẽ kiểm tra nội dung tệp.',
             style: TextStyle(color: AppColors.textSecondary),
           ),
           const SizedBox(height: 12),
@@ -402,6 +629,28 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
             ),
           ],
         ],
+      ],
+    );
+  }
+
+  Widget _ownerSummary() {
+    final user = context.watch<AuthViewModel>().currentUser;
+    String shown(String? value) =>
+        value?.trim().isNotEmpty == true ? value!.trim() : 'Chưa có thông tin';
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Thông tin chủ sở hữu',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
+        ),
+        const SizedBox(height: 6),
+        const Text('Lấy từ hồ sơ tài khoản; không cần nhập lại.'),
+        const SizedBox(height: 8),
+        Text('Họ và tên: ${shown(user?.fullName)}'),
+        Text('Số điện thoại: ${shown(user?.phone)}'),
+        Text('Email: ${shown(user?.email)}'),
+        Text('Địa chỉ: ${shown(user?.address)}'),
       ],
     );
   }

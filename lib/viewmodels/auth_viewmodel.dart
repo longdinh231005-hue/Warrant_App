@@ -38,7 +38,8 @@ class AuthViewModel extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _isMock = prefs.getBool('isMock') ?? true;
+    // Release has no test-mode control on the sign-in screen.
+    _isMock = kDebugMode && (prefs.getBool('isMock') ?? true);
 
     // Explicit build config for production, fallback to local for debug
     const String envUrl = String.fromEnvironment('API_URL', defaultValue: '');

@@ -8,8 +8,8 @@ import '../../widgets/custom_text_field.dart';
 
 /// WarrantSafe – Register Screen (connected to AuthViewModel)
 ///
-/// Two‑step registration flow inside a PageView:
-///   Step 1 — YOUR INFO   : Full Name, Phone (with country code), Email
+/// Mock-only two-step registration flow inside a PageView:
+///   Step 1 — YOUR INFO   : Full Name, Email
 ///   Step 2 — SECURITY    : Password, Confirm Password, strength rules, T&C
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -26,7 +26,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   // ── Step 1 controllers ────────────────────────────────────────────
   final _step1FormKey = GlobalKey<FormState>();
   final _fullNameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
 
   // ── Step 2 controllers ────────────────────────────────────────────
@@ -48,15 +47,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool get _isPasswordValid =>
       _hasMinLength && _hasUppercase && _hasNumberOrSymbol;
 
-  // ── Country code dropdown ─────────────────────────────────────────
-  String _selectedCountry = 'VN';
-  final List<String> _countryCodes = ['VN', 'US', 'UK', 'JP', 'KR', 'TH'];
-
   @override
   void dispose() {
     _pageController.dispose();
     _fullNameCtrl.dispose();
-    _phoneCtrl.dispose();
     _emailCtrl.dispose();
     _passwordCtrl.dispose();
     _confirmCtrl.dispose();
@@ -119,7 +113,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     await vm.registerUser(
       fullName: _fullNameCtrl.text.trim(),
-      phone: '$_selectedCountry ${_phoneCtrl.text.trim()}',
+      phone: '',
       email: _emailCtrl.text.trim(),
       password: _passwordCtrl.text,
     );
@@ -156,7 +150,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Text(
-                    'Đăng ký tài khoản Real qua OTP chưa được tích hợp trong ứng dụng. Không cần điền biểu mẫu Mock.',
+                    'Đăng ký bằng email hoặc Google hiện chưa khả dụng. Vui lòng đăng nhập bằng tài khoản đã có.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 16),
@@ -290,6 +284,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               'Đăng ký để theo dõi và bảo vệ thiết bị của bạn',
               style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
             ),
+            const SizedBox(height: 8),
+            const Text(
+              'Chế độ minh họa: tài khoản này không được tạo trên hệ thống thật.',
+              style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+            ),
             const SizedBox(height: 32),
 
             // Full Name
@@ -307,10 +306,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 22),
-
-            // Phone Number with country code
-            _buildPhoneField(),
             const SizedBox(height: 22),
 
             // Email Address
@@ -352,76 +347,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildPhoneField() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'SỐ ĐIỆN THOẠI',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.4,
-            color: AppColors.textSecondary,
-          ),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            // Country code dropdown
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: AppColors.inputFill,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedCountry,
-                  icon: const Icon(
-                    Icons.keyboard_arrow_down,
-                    size: 18,
-                    color: AppColors.textHint,
-                  ),
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textPrimary,
-                  ),
-                  items: _countryCodes.map((code) {
-                    return DropdownMenuItem(value: code, child: Text(code));
-                  }).toList(),
-                  onChanged: (v) =>
-                      setState(() => _selectedCountry = v ?? _selectedCountry),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Phone number input
-            Expanded(
-              child: TextFormField(
-                controller: _phoneCtrl,
-                keyboardType: TextInputType.phone,
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-                decoration: const InputDecoration(hintText: '+84 912 345 678'),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return 'Nhập số điện thoại';
-                  }
-                  return null;
-                },
-              ),
-            ),
-          ],
-        ),
-      ],
     );
   }
 

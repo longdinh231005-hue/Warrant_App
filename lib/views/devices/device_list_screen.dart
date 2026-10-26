@@ -96,7 +96,7 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
                         child: Text(
                           isMock
                               ? 'Tra cứu thiết bị qua Serial/IMEI'
-                              : 'Tra cứu yêu cầu/phiếu bằng mã và SĐT',
+                              : 'Tra cứu yêu cầu/phiếu bằng mã',
                           style: const TextStyle(
                             color: AppColors.textSecondary,
                             fontSize: 14,

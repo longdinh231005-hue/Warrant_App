@@ -8,7 +8,7 @@ import '../../services/i_api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 
-/// The customer-accessible lookup contract accepts a YC/TN code and phone.
+/// Signed-in customers look up only their own YC/TN records by code.
 /// Serial/IMEI lookup is staff-only; this screen never calls that endpoint.
 class RealLookupScreen extends StatefulWidget {
   const RealLookupScreen({super.key});
@@ -20,7 +20,6 @@ class RealLookupScreen extends StatefulWidget {
 class _RealLookupScreenState extends State<RealLookupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _code = TextEditingController();
-  final _phone = TextEditingController();
   PortalLookupRecord? _record;
   String? _error;
   bool _canRetry = false;
@@ -29,7 +28,6 @@ class _RealLookupScreenState extends State<RealLookupScreen> {
   @override
   void dispose() {
     _code.dispose();
-    _phone.dispose();
     super.dispose();
   }
 
@@ -43,17 +41,18 @@ class _RealLookupScreenState extends State<RealLookupScreen> {
       _record = null;
     });
     try {
-      final record = await context.read<AuthViewModel>().lookupPortal(
-        _code.text,
-        _phone.text,
-      );
+      final code = _code.text.trim().toUpperCase();
+      final auth = context.read<AuthViewModel>();
+      final record = code.startsWith('YC-')
+          ? PortalLookupRecord.request(await auth.getMyWarrantyRequest(code))
+          : PortalLookupRecord.ticket(await auth.getPortalTicket(code));
       if (mounted) setState(() => _record = record);
     } on ApiException catch (error) {
       if (!mounted) return;
       setState(() {
         _canRetry = error.statusCode == null;
         _error = switch (error.statusCode) {
-          404 => 'Không tìm thấy yêu cầu/phiếu khớp mã và số điện thoại.',
+          404 => 'Không tìm thấy yêu cầu/phiếu này trong tài khoản của bạn.',
           429 => 'Bạn đã tra cứu quá nhiều lần. Vui lòng đợi rồi thử lại.',
           null => 'Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.',
           _ =>
@@ -88,7 +87,7 @@ class _RealLookupScreenState extends State<RealLookupScreen> {
         padding: const EdgeInsets.all(20),
         children: [
           const Text(
-            'Tra cứu yêu cầu hoặc phiếu tiếp nhận bằng mã YC/TN và số điện thoại đã đăng ký.',
+            'Tra cứu yêu cầu hoặc phiếu tiếp nhận của bạn bằng mã YC/TN.',
           ),
           const SizedBox(height: 16),
           Form(
@@ -105,19 +104,6 @@ class _RealLookupScreenState extends State<RealLookupScreen> {
                       ).hasMatch(value?.trim().toUpperCase() ?? '')
                       ? null
                       : 'Nhập đầy đủ mã YC-... hoặc TN-... (phần sau dấu gạch không được trống).',
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _phone,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(labelText: 'Số điện thoại'),
-                  validator: (value) =>
-                      RegExp(
-                            r'^\+?[0-9 .()-]{9,20}$',
-                          ).hasMatch(value?.trim() ?? '') &&
-                          RegExp(r'\d').allMatches(value ?? '').length >= 9
-                      ? null
-                      : 'Nhập số điện thoại hợp lệ.',
                 ),
               ],
             ),
@@ -203,8 +189,6 @@ class _RealLookupScreenState extends State<RealLookupScreen> {
     if (ticket.pendingQuotation case final quote?)
       Text('Báo giá chờ quyết định: ${quote.code} · ${quote.grandTotal} VNĐ'),
     const SizedBox(height: 8),
-    const Text(
-      'Tra cứu chỉ hiển thị dữ liệu được backend cấp quyền cho mã này.',
-    ),
+    const Text('Tra cứu chỉ hiển thị dữ liệu thuộc tài khoản của bạn.'),
   ];
 }

@@ -1,5 +1,37 @@
 import 'user_model.dart';
 
+/// One optional file part. The stream factory allows a deliberate resubmission
+/// after a known validation failure without reusing an exhausted stream.
+class RequestAttachment {
+  const RequestAttachment({
+    required this.name,
+    required this.length,
+    required this.openRead,
+  });
+
+  final String name;
+  final int length;
+  final Stream<List<int>> Function() openRead;
+
+  static String? validateSelection(List<RequestAttachment> files) {
+    if (files.length > 3) return 'Chỉ chọn tối đa 3 tệp như trên Web.';
+    for (final file in files) {
+      final extension = file.name.split('.').last.toLowerCase();
+      final isVideo = extension == 'mp4';
+      if (!['jpg', 'jpeg', 'png', 'webp', 'mp4'].contains(extension)) {
+        return 'Chỉ chọn ảnh JPEG, PNG, WebP hoặc video MP4.';
+      }
+      final maxBytes = (isVideo ? 30 : 5) * 1024 * 1024;
+      if (file.length <= 0 || file.length > maxBytes) {
+        return isVideo
+            ? 'Video MP4 phải lớn hơn 0 và không quá 30 MiB.'
+            : 'Mỗi ảnh phải lớn hơn 0 và không quá 5 MiB.';
+      }
+    }
+    return null;
+  }
+}
+
 class PortalDeviceType {
   const PortalDeviceType(this.code, this.name, this.identifierType);
   final String code;
@@ -69,6 +101,9 @@ class OwnWarrantyRequestData {
     required this.serialOrImei,
     required this.symptom,
     required this.preferredStation,
+    this.preferredFrom,
+    this.preferredTo,
+    this.attachments = const [],
   });
 
   final String categoryCode;
@@ -78,9 +113,11 @@ class OwnWarrantyRequestData {
   final String serialOrImei;
   final String symptom;
   final String preferredStation;
+  final DateTime? preferredFrom;
+  final DateTime? preferredTo;
+  final List<RequestAttachment> attachments;
 
-  /// PreferredFrom/PreferredTo and files are optional in the current backend
-  /// contract. The mobile form does not collect or send them yet.
+  /// Appointment preference is optional in the API; the customer form asks for it.
   Map<String, dynamic> toJson() => {
     'categoryCode': categoryCode,
     'deviceTypeCode': deviceTypeCode,
@@ -89,7 +126,17 @@ class OwnWarrantyRequestData {
     'serialOrImei': serialOrImei,
     'symptom': symptom,
     'preferredStation': preferredStation,
+    if (preferredFrom != null)
+      'preferredFrom': preferredFrom!.toUtc().toIso8601String(),
+    if (preferredTo != null)
+      'preferredTo': preferredTo!.toUtc().toIso8601String(),
   };
+
+  static String? validatePreferredArrival(DateTime? from, DateTime now) {
+    if (from == null) return 'Vui lòng chọn thời gian mong muốn mang máy tới.';
+    if (!from.isAfter(now)) return 'Vui lòng chọn thời gian trong tương lai.';
+    return null;
+  }
 
   static String brandModelOf(OwnedDevice device) {
     final brand = device.brandName.trim();
@@ -100,6 +147,67 @@ class OwnWarrantyRequestData {
       return product;
     }
     return '$brand $product';
+  }
+
+  /// A new device is identified in the online request, then checked at intake.
+  /// This does not register the device or activate its warranty.
+  static Map<String, String> validateUnregistered({
+    required PortalCatalog catalog,
+    required String? categoryCode,
+    required String? deviceTypeCode,
+    required String brandModel,
+    required String serialOrImei,
+    required String? stationCode,
+    required String symptom,
+  }) {
+    final errors = <String, String>{};
+    final category = catalog.categories
+        .where((item) => item.code == categoryCode)
+        .firstOrNull;
+    if (category == null) {
+      errors['categoryCode'] = 'Vui lòng chọn nhóm thiết bị.';
+    }
+    final type = category?.deviceTypes
+        .where((item) => item.code == deviceTypeCode)
+        .firstOrNull;
+    if (type == null ||
+        (type.identifierType.toUpperCase() != 'SERIAL' &&
+            type.identifierType.toUpperCase() != 'IMEI')) {
+      errors['deviceTypeCode'] = 'Vui lòng chọn loại thiết bị hợp lệ.';
+    }
+    if (brandModel.trim().isEmpty) {
+      errors['brandModel'] = 'Vui lòng nhập hãng và model thiết bị.';
+    }
+    final identifier = serialOrImei.replaceAll(RegExp(r'\s'), '').toUpperCase();
+    if (type?.identifierType.toUpperCase() == 'SERIAL' &&
+        !RegExp(r'^[A-Z0-9-]{4,50}$').hasMatch(identifier)) {
+      errors['serialOrImei'] =
+          'Serial cần 4–50 ký tự chữ, số hoặc dấu gạch ngang.';
+    } else if (type?.identifierType.toUpperCase() == 'IMEI' &&
+        (!RegExp(r'^\d{15}$').hasMatch(identifier) ||
+            !_validImei(identifier))) {
+      errors['serialOrImei'] = 'IMEI cần 15 chữ số hợp lệ.';
+    }
+    if (!catalog.stations.any((station) => station.code == stationCode)) {
+      errors['preferredStation'] = 'Vui lòng chọn trạm dịch vụ trong danh mục.';
+    }
+    if (symptom.trim().isEmpty || symptom.trim().length > 2000) {
+      errors['symptom'] = 'Vui lòng mô tả lỗi (tối đa 2000 ký tự).';
+    }
+    return errors;
+  }
+
+  static bool _validImei(String value) {
+    var sum = 0;
+    for (var index = 0; index < value.length; index++) {
+      var digit = value.codeUnitAt(value.length - 1 - index) - 48;
+      if (index.isOdd) {
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+      sum += digit;
+    }
+    return sum % 10 == 0;
   }
 
   static Map<String, String> validate({

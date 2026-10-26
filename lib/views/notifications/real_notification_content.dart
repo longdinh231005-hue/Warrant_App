@@ -65,7 +65,9 @@ class _RealNotificationContentState extends State<RealNotificationContent> {
     try {
       if (!item.read) {
         await context.read<AuthViewModel>().markNotificationRead(item.id);
-        await _load();
+        // The inbox refresh must not keep the notification tap waiting to
+        // open a ticket. The server remains the source of the unread count.
+        unawaited(_load());
       }
       if (!mounted) return;
       final path = item.customerPath;
@@ -76,8 +78,10 @@ class _RealNotificationContentState extends State<RealNotificationContent> {
           ),
         );
       } else {
-        await context.push(path);
-        await _load();
+        // push() completes only when the detail route is popped. Waiting for
+        // it kept this row's spinner alive while the customer viewed or
+        // decided a quotation, sometimes until logout reset the shell.
+        context.go(path);
       }
     } on ApiException catch (error) {
       if (mounted) {

@@ -389,9 +389,23 @@ class RealApiService implements IApiService {
   @override
   Future<String> submitMyWarrantyRequest(OwnWarrantyRequestData data) async {
     try {
+      final form = FormData();
+      form.fields.add(MapEntry('data', jsonEncode(data.toJson())));
+      for (final file in data.attachments) {
+        form.files.add(
+          MapEntry(
+            'files',
+            MultipartFile.fromStream(
+              file.openRead,
+              file.length,
+              filename: file.name,
+            ),
+          ),
+        );
+      }
       final response = await _dio.post(
         '/portal/my/warranty-requests',
-        data: FormData.fromMap({'data': jsonEncode(data.toJson())}),
+        data: form,
         options: Options(contentType: Headers.multipartFormDataContentType),
       );
       if (response.statusCode != 201) {

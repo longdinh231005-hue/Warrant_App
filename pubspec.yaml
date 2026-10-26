@@ -43,6 +43,8 @@ dependencies:
 
   # ── HTTP client (used as mock in this sprint) ────────────────────
   dio: ^5.8.0+1
+  # Native document picker for optional warranty request evidence.
+  file_picker: ^11.0.3
 
   # ── Encrypted local storage for auth token ───────────────────────
   flutter_secure_storage: ^9.2.2

@@ -69,6 +69,7 @@ class _MemoryStorage implements TokenStorage {
 
 class _FakePortalApi extends IApiService {
   int submitCount = 0;
+  OwnWarrantyRequestData? submittedData;
   int listCount = 0;
   Completer<String>? pending;
   Completer<List<PortalRequestSummary>>? pendingList;
@@ -110,6 +111,7 @@ class _FakePortalApi extends IApiService {
   @override
   Future<String> submitMyWarrantyRequest(OwnWarrantyRequestData data) {
     submitCount++;
+    submittedData = data;
     if (submitError != null) return Future.error(submitError!);
     return pending?.future ?? Future.value('YC-TEST');
   }
@@ -137,6 +139,21 @@ Future<AuthViewModel> _authenticated(_FakePortalApi api) async {
   await auth.initialize();
   expect(await auth.loginUser('customer', ''), isTrue);
   return auth;
+}
+
+Future<void> _choosePreferredArrival(WidgetTester tester) async {
+  final picker = find.byKey(
+    const ValueKey('preferred-arrival-picker'),
+    skipOffstage: false,
+  );
+  await tester.ensureVisible(picker);
+  await tester.pumpAndSettle();
+  await tester.tap(picker);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('OK').last);
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('OK').last);
+  await tester.pumpAndSettle();
 }
 
 void main() {
@@ -177,6 +194,36 @@ void main() {
     },
   );
 
+  test('new device identity follows catalog type and backend serial rules', () {
+    Map<String, String> validate(String type, String serial) =>
+        OwnWarrantyRequestData.validateUnregistered(
+          catalog: _catalog,
+          categoryCode: 'CAT',
+          deviceTypeCode: type,
+          brandModel: 'Máy mẫu',
+          serialOrImei: serial,
+          stationCode: 'STATION',
+          symptom: 'Không nhận sạc',
+        );
+
+    expect(validate('TYPE', 'SERIAL-1234'), isEmpty);
+    expect(validate('TYPE', 'abc'), contains('serialOrImei'));
+    expect(validate('PHONE', '490154203237518'), isEmpty);
+    expect(validate('PHONE', '490154203237519'), contains('serialOrImei'));
+    expect(
+      OwnWarrantyRequestData.validateUnregistered(
+        catalog: _catalog,
+        categoryCode: 'CAT',
+        deviceTypeCode: 'TYPE',
+        brandModel: ' ',
+        serialOrImei: 'SERIAL-1234',
+        stationCode: 'STATION',
+        symptom: ' ',
+      ).keys,
+      containsAll(['brandModel', 'symptom']),
+    );
+  });
+
   test('request model uses server fields and omits optional time/customer', () {
     const payload = OwnWarrantyRequestData(
       categoryCode: 'CAT',
@@ -201,6 +248,35 @@ void main() {
     );
     expect(payload.toJson(), isNot(contains('customer')));
     expect(payload.toJson(), isNot(contains('preferredFrom')));
+    final arrival = DateTime.utc(2026, 10, 24, 9);
+    final scheduled = OwnWarrantyRequestData(
+      categoryCode: 'CAT',
+      deviceTypeCode: 'TYPE',
+      brandModel: 'Máy mẫu',
+      identifierType: 'SERIAL',
+      serialOrImei: 'SERIAL-1234',
+      symptom: 'Máy không lên nguồn',
+      preferredStation: 'STATION',
+      preferredFrom: arrival,
+      preferredTo: arrival.add(const Duration(hours: 1)),
+    );
+    expect(scheduled.toJson()['preferredFrom'], '2026-10-24T09:00:00.000Z');
+    expect(scheduled.toJson()['preferredTo'], '2026-10-24T10:00:00.000Z');
+    expect(
+      OwnWarrantyRequestData.validatePreferredArrival(null, arrival),
+      isNotNull,
+    );
+    expect(
+      OwnWarrantyRequestData.validatePreferredArrival(arrival, arrival),
+      isNotNull,
+    );
+    expect(
+      OwnWarrantyRequestData.validatePreferredArrival(
+        arrival.add(const Duration(minutes: 1)),
+        arrival,
+      ),
+      isNull,
+    );
     expect(
       PortalRequestSummary.fromJson({
         'code': 'YC-1',
@@ -212,6 +288,38 @@ void main() {
     expect(
       portalRequestStatusLabel('PENDING_INTAKE'),
       'Chờ tiếp nhận thiết bị',
+    );
+  });
+
+  test('attachment limits follow Web selection and backend file sizes', () {
+    RequestAttachment file(String name, int length) => RequestAttachment(
+      name: name,
+      length: length,
+      openRead: () => Stream.value([1]),
+    );
+    expect(
+      RequestAttachment.validateSelection([file('fault.png', 5 * 1024 * 1024)]),
+      isNull,
+    );
+    expect(
+      RequestAttachment.validateSelection([file('clip.mp4', 30 * 1024 * 1024)]),
+      isNull,
+    );
+    expect(
+      RequestAttachment.validateSelection([
+        file('fault.png', 5 * 1024 * 1024 + 1),
+      ]),
+      isNotNull,
+    );
+    expect(
+      RequestAttachment.validateSelection([file('report.pdf', 10)]),
+      isNotNull,
+    );
+    expect(
+      RequestAttachment.validateSelection(
+        List.filled(4, file('fault.jpg', 10)),
+      ),
+      isNotNull,
     );
   });
 
@@ -255,6 +363,54 @@ void main() {
       );
       expect(adapter.calls, 1);
       expect(code, 'YC-SERVER');
+    },
+  );
+
+  test(
+    'multipart submission uses exact files part name with one POST',
+    () async {
+      final adapter = _RequestAdapter((options, stream) async {
+        final bytes = await stream!.fold<List<int>>(
+          [],
+          (result, chunk) => result..addAll(chunk),
+        );
+        final body = utf8.decode(bytes, allowMalformed: true);
+        expect(options.method, 'POST');
+        expect(body, contains('name="data"'));
+        expect(body, contains('name="files"; filename="proof.png"'));
+        expect(body, isNot(contains('name="files[]"')));
+        return ResponseBody.fromString(
+          '{"code":"YC-FILE"}',
+          201,
+          headers: {
+            Headers.contentTypeHeader: ['application/json'],
+          },
+        );
+      });
+      final api = RealApiService(
+        baseUrl: 'http://127.0.0.1:8080/api/v1',
+        adapter: adapter,
+      );
+      final code = await api.submitMyWarrantyRequest(
+        OwnWarrantyRequestData(
+          categoryCode: 'CAT',
+          deviceTypeCode: 'TYPE',
+          brandModel: 'Máy mẫu',
+          identifierType: 'SERIAL',
+          serialOrImei: 'SERIAL-1234',
+          symptom: 'Máy không lên nguồn',
+          preferredStation: 'STATION',
+          attachments: [
+            RequestAttachment(
+              name: 'proof.png',
+              length: 4,
+              openRead: () => Stream.value([1, 2, 3, 4]),
+            ),
+          ],
+        ),
+      );
+      expect(code, 'YC-FILE');
+      expect(adapter.calls, 1);
     },
   );
 
@@ -444,10 +600,135 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('SERIAL: SERIAL-1234'), findsOneWidget);
     expect(find.text('Thiết bị của bạn *'), findsNothing);
+    expect(
+      find.text('Thiết bị chưa có trong danh sách? Nhập thông tin'),
+      findsNothing,
+    );
     await tester.tap(find.text('GỬI YÊU CẦU'));
     await tester.pump();
     expect(find.text('Vui lòng chọn nhóm thiết bị.'), findsOneWidget);
     expect(api.submitCount, 0);
+  });
+
+  testWidgets(
+    'general Real form offers new device without posting incomplete data',
+    (tester) async {
+      final api = _FakePortalApi();
+      final auth = await _authenticated(api);
+      final requests = RequestViewModel(auth);
+      addTearDown(() {
+        requests.dispose();
+        auth.dispose();
+      });
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<AuthViewModel>.value(value: auth),
+            ChangeNotifierProvider<RequestViewModel>.value(value: requests),
+          ],
+          child: const MaterialApp(home: RealCreateRequestScreen()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.text('Thiết bị chưa có trong danh sách? Nhập thông tin'),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('Thiết bị của bạn *'), findsNothing);
+      expect(find.byType(TextFormField, skipOffstage: false), findsNWidgets(3));
+      await tester.tap(find.text('GỬI YÊU CẦU'));
+      await tester.pump();
+      expect(find.text('Vui lòng chọn nhóm thiết bị.'), findsOneWidget);
+      expect(api.submitCount, 0);
+    },
+  );
+
+  testWidgets('manual Real form submits the entered identity once', (
+    tester,
+  ) async {
+    final api = _FakePortalApi();
+    final auth = await _authenticated(api);
+    final requests = RequestViewModel(auth);
+    addTearDown(() {
+      requests.dispose();
+      auth.dispose();
+    });
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider<AuthViewModel>.value(value: auth),
+          ChangeNotifierProvider<RequestViewModel>.value(value: requests),
+        ],
+        child: const MaterialApp(home: RealCreateRequestScreen()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.text('Thiết bị chưa có trong danh sách? Nhập thông tin'),
+    );
+    await tester.pumpAndSettle();
+    final dropdowns = find.byType(DropdownButtonFormField<String>);
+    await tester.tap(dropdowns.at(0));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Nhóm mẫu').last);
+    await tester.pumpAndSettle();
+    await tester.tap(dropdowns.at(1));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Loại mẫu').last);
+    await tester.pumpAndSettle();
+    final brand = find.byKey(
+      const ValueKey('manual-brand-model'),
+      skipOffstage: false,
+    );
+    final serial = find.byKey(
+      const ValueKey('manual-serial'),
+      skipOffstage: false,
+    );
+    final symptom = find.byKey(
+      const ValueKey('request-symptom'),
+      skipOffstage: false,
+    );
+    await tester.ensureVisible(brand);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('manual-brand-model')),
+      'Máy nhập tay',
+    );
+    await tester.ensureVisible(serial);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('manual-serial')),
+      'NEW-1234',
+    );
+    await tester.ensureVisible(symptom);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('request-symptom')),
+      'Không nhận sạc',
+    );
+    final station = find
+        .byType(DropdownButtonFormField<String>, skipOffstage: false)
+        .at(2);
+    await tester.ensureVisible(station);
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(DropdownButtonFormField<String>).last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Trạm mẫu').last);
+    await tester.pumpAndSettle();
+    await _choosePreferredArrival(tester);
+    await tester.tap(find.text('GỬI YÊU CẦU'));
+    await tester.pumpAndSettle();
+    expect(api.submitCount, 1);
+    expect(api.submittedData?.brandModel, 'Máy nhập tay');
+    expect(api.submittedData?.serialOrImei, 'NEW-1234');
+    expect(api.submittedData?.identifierType, 'SERIAL');
+    expect(api.submittedData?.preferredFrom, isNotNull);
+    expect(
+      api.submittedData!.preferredTo!.difference(
+        api.submittedData!.preferredFrom!,
+      ),
+      const Duration(hours: 1),
+    );
   });
 
   testWidgets('owned-device action hands the same device to the Real form', (
@@ -507,11 +788,17 @@ void main() {
           .onChanged
           ?.call('CAT');
       await tester.pump();
-      tester
-          .widget<DropdownButtonFormField<String>>(dropdowns.at(1))
-          .onChanged
-          ?.call('TYPE');
-      await tester.pump();
+      expect(find.text('Loại theo danh mục: Loại mẫu'), findsOneWidget);
+      expect(find.text('Loại thiết bị *'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.byKey(const ValueKey('request-symptom')),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.enterText(
+        find.byKey(const ValueKey('request-symptom')),
+        'Máy không lên nguồn',
+      );
       await tester.scrollUntilVisible(
         find.text('Trạm dịch vụ mong muốn *'),
         250,
@@ -525,11 +812,16 @@ void main() {
           .onChanged
           ?.call('STATION');
       await tester.pump();
-      await tester.enterText(find.byType(TextFormField), 'Máy không lên nguồn');
+      await _choosePreferredArrival(tester);
       await tester.tap(find.text('GỬI YÊU CẦU'));
       await tester.pumpAndSettle();
       expect(api.submitCount, 1);
       expect(find.text('GỬI YÊU CẦU'), findsNothing);
+      await tester.scrollUntilVisible(
+        find.text('Kiểm tra danh sách yêu cầu'),
+        250,
+        scrollable: find.byType(Scrollable).first,
+      );
       expect(find.text('Kiểm tra danh sách yêu cầu'), findsOneWidget);
     },
   );

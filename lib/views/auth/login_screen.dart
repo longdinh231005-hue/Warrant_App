@@ -18,7 +18,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   // ── Form ──────────────────────────────────────────────────────────
   final _formKey = GlobalKey<FormState>();
-  final _apiUrlEditorKey = GlobalKey<_ApiUrlEditorState>();
   final _emailCtrl = TextEditingController();
   final _passwordCtrl = TextEditingController();
   bool _obscurePassword = true;
@@ -37,10 +36,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final vm = context.read<AuthViewModel>();
-    if (!vm.isMock && kDebugMode) {
-      final editor = _apiUrlEditorKey.currentState;
-      if (editor != null && !await editor.apply(showSuccess: false)) return;
-    }
     await vm.loginUser(_emailCtrl.text.trim(), _passwordCtrl.text);
 
     // GoRouter's refreshListenable fires when isAuthenticated changes.
@@ -159,7 +154,11 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 32),
 
                 // ── Logo & Brand ────────────────────────────────────
-                _buildLogo(),
+                GestureDetector(
+                  key: const ValueKey('debug-settings-gesture'),
+                  onLongPress: kDebugMode ? _showDebugSettings : null,
+                  child: _buildLogo(),
+                ),
                 const SizedBox(height: 40),
 
                 // ── Welcome text ────────────────────────────────────
@@ -248,15 +247,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 ],
                 const SizedBox(height: 32),
 
-                // ── Email / Phone field ─────────────────────────────
+                // ── Username field ───────────────────────────────────
                 CustomTextField(
-                  label: 'Số điện thoại hoặc email *',
-                  hintText: 'minhanh@example.com',
-                  keyboardType: TextInputType.emailAddress,
+                  label: 'Tên đăng nhập *',
+                  hintText: 'Nhập tên đăng nhập',
+                  keyboardType: TextInputType.text,
                   controller: _emailCtrl,
                   validator: (v) {
                     if (v == null || v.trim().isEmpty) {
-                      return 'Vui lòng nhập tên đăng nhập hoặc email';
+                      return 'Vui lòng nhập tên đăng nhập';
                     }
                     return null;
                   },
@@ -306,19 +305,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 24),
 
                 // ── API Configuration ───────────────────────────────
-                _buildApiConfig(context),
-                const SizedBox(height: 16),
 
                 // ── Hint for demo / testing ─────────────────────────
-                if (isMock) ...[
-                  _buildDemoHint(),
-                  TextButton(
-                    onPressed: isLoading
-                        ? null
-                        : () => context.push(AppRoutes.register),
-                    child: const Text('Tạo tài khoản Mock'),
-                  ),
-                ],
+                if (isMock) ...[_buildDemoHint()],
+                TextButton(
+                  onPressed: isLoading
+                      ? null
+                      : () => context.push(AppRoutes.register),
+                  child: const Text('Đăng ký tài khoản'),
+                ),
                 const SizedBox(height: 16),
               ],
             ),
@@ -374,6 +369,36 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  void _showDebugSettings() {
+    if (!kDebugMode) return;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
+          ),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Cấu hình thử nghiệm',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 12),
+                _buildApiConfig(sheetContext),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -469,7 +494,7 @@ class _LoginScreenState extends State<LoginScreen> {
           if (!vm.isMock) ...[
             const SizedBox(height: 8),
             if (kDebugMode)
-              _ApiUrlEditor(key: _apiUrlEditorKey, initialUrl: vm.baseUrl)
+              _ApiUrlEditor(initialUrl: vm.baseUrl)
             else
               TextFormField(
                 initialValue: vm.baseUrl,
@@ -488,7 +513,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
 class _ApiUrlEditor extends StatefulWidget {
   final String initialUrl;
-  const _ApiUrlEditor({super.key, required this.initialUrl});
+  const _ApiUrlEditor({required this.initialUrl});
 
   @override
   State<_ApiUrlEditor> createState() => _ApiUrlEditorState();

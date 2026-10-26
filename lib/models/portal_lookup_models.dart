@@ -1,7 +1,7 @@
 import 'portal_request_models.dart';
 import 'portal_ticket_models.dart';
 
-/// Only the record authorized by the short-lived portal lookup grant.
+/// A request or ticket returned after backend authorization.
 class PortalLookupRecord {
   const PortalLookupRecord.request(this.request) : ticket = null;
   const PortalLookupRecord.ticket(this.ticket) : request = null;
