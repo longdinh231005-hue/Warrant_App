@@ -307,17 +307,30 @@ class AuthViewModel extends ChangeNotifier {
     required String phone,
     required String email,
     required String password,
+    String? emailOtp,
   }) async {
     _sessionGeneration++;
     _clearNotificationState();
+    _lastRegistrationError = null;
     _begin();
     try {
-      final response = await _api.register(
-        fullName: fullName.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-        password: password,
-      );
+      if (!_isMock && (emailOtp == null || emailOtp.trim().isEmpty)) {
+        throw const ApiException('Vui lòng nhập mã OTP gửi qua email.');
+      }
+      final response = _isMock
+          ? await _api.register(
+              fullName: fullName.trim(),
+              phone: phone.trim(),
+              email: email.trim(),
+              password: password,
+            )
+          : await _api.registerWithEmailOtp(
+              fullName: fullName.trim(),
+              phone: phone.trim(),
+              email: email.trim(),
+              otp: emailOtp!,
+              password: password,
+            );
       await _storage.saveSession(
         token: response.accessToken,
         refreshToken: response.refreshToken,
@@ -326,19 +339,46 @@ class AuthViewModel extends ChangeNotifier {
       );
       _api.setAuthToken(response.accessToken);
       _currentUser = response.user;
+      if (!_isMock) await refreshProfile();
       unawaited(_primeNotificationCount());
       _end();
       return true;
     } on ApiException catch (e) {
+      _lastRegistrationError = e;
       _setError(e.message);
       _setLoading(false);
       return false;
     } catch (_) {
+      _lastRegistrationError = const ApiException(
+        'Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.',
+      );
       _setError('Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.');
       _setLoading(false);
       return false;
     }
   }
+
+  ApiException? _lastRegistrationError;
+  ApiException? get lastRegistrationError => _lastRegistrationError;
+
+  Future<EmailOtpIssued> requestRegistrationOtp(String email, String phone) =>
+      _api.requestRegistrationOtp(email, phone);
+
+  Future<EmailOtpIssued> requestPasswordResetOtp(String email) =>
+      _api.requestPasswordResetOtp(email);
+
+  Future<void> verifyPasswordResetOtp(String email, String otp) =>
+      _api.verifyPasswordResetOtp(email, otp);
+
+  Future<void> resetPasswordWithEmailOtp({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) => _api.resetPasswordWithEmailOtp(
+    email: email,
+    otp: otp,
+    newPassword: newPassword,
+  );
 
   Future<void> refreshProfile() async {
     if (_currentUser == null) return;

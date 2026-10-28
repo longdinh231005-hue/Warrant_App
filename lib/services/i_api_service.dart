@@ -15,6 +15,7 @@ class ApiException implements Exception {
     this.message, {
     this.statusCode,
     this.fieldErrors = const {},
+    this.code,
   });
 
   final String message;
@@ -22,6 +23,7 @@ class ApiException implements Exception {
   /// HTTP status code when available (null for network / mock errors).
   final int? statusCode;
   final Map<String, String> fieldErrors;
+  final String? code;
 
   @override
   String toString() => 'ApiException($statusCode): $message';
@@ -55,6 +57,31 @@ abstract class IApiService {
     required String email,
     required String password,
   });
+
+  /// Real customer registration uses an email OTP; Mock registration remains
+  /// the existing local demonstration flow.
+  Future<EmailOtpIssued> requestRegistrationOtp(String email, String phone) =>
+      throw UnsupportedError('Email OTP is not available in Mock mode.');
+
+  Future<AuthResponse> registerWithEmailOtp({
+    required String fullName,
+    required String phone,
+    required String email,
+    required String otp,
+    required String password,
+  }) => throw UnsupportedError('Email OTP is not available in Mock mode.');
+
+  Future<EmailOtpIssued> requestPasswordResetOtp(String email) =>
+      throw UnsupportedError('Password reset is not available in Mock mode.');
+
+  Future<void> verifyPasswordResetOtp(String email, String otp) =>
+      throw UnsupportedError('Password reset is not available in Mock mode.');
+
+  Future<void> resetPasswordWithEmailOtp({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) => throw UnsupportedError('Password reset is not available in Mock mode.');
 
   /// Fetches the profile.
   /// Throws [ApiException] if not found.

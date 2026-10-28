@@ -116,6 +116,10 @@ class _RealRequestDetailScreenState extends State<RealRequestDetailScreen> {
             portalRequestStatusLabel(request.status),
             style: const TextStyle(fontWeight: FontWeight.w700),
           ),
+          if (request.createdAt != null) ...[
+            const SizedBox(height: 8),
+            Text('Gửi lúc: ${_dateTime(request.createdAt!)}'),
+          ],
           if (request.status == 'PENDING_INTAKE') ...[
             const SizedBox(height: 10),
             const Text(
@@ -127,9 +131,13 @@ class _RealRequestDetailScreenState extends State<RealRequestDetailScreen> {
         _card([
           _row('Thiết bị', request.brandModel),
           _row(request.identifierType ?? 'Serial/IMEI', request.serialOrImei),
-          _row('Nhóm thiết bị', request.categoryCode),
-          _row('Loại thiết bị', request.deviceTypeCode),
-          _row('Trạm mong muốn', request.preferredStation),
+          _row('Mã nhóm thiết bị', request.categoryCode),
+          _row('Mã loại thiết bị', request.deviceTypeCode),
+          _row('Mã trạm mong muốn', request.preferredStation),
+          _row(
+            'Thời gian mong muốn mang máy tới (chưa xác nhận)',
+            _preferredArrival(request),
+          ),
         ]),
         const SizedBox(height: 16),
         _card([
@@ -185,4 +193,20 @@ class _RealRequestDetailScreenState extends State<RealRequestDetailScreen> {
           padding: const EdgeInsets.only(bottom: 10),
           child: Text('$label: $value'),
         );
+
+  String? _preferredArrival(PortalRequestDetail request) {
+    final from = request.preferredFrom;
+    if (from == null) return null;
+    final to = request.preferredTo;
+    return to == null
+        ? _dateTime(from)
+        : '${_dateTime(from)} – ${_dateTime(to)}';
+  }
+
+  String _dateTime(DateTime value) {
+    final local = value.toLocal();
+    String two(int number) => number.toString().padLeft(2, '0');
+    return '${two(local.day)}/${two(local.month)}/${local.year} '
+        '${two(local.hour)}:${two(local.minute)}';
+  }
 }

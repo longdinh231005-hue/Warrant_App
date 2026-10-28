@@ -45,11 +45,9 @@ class RealApiService implements IApiService {
     String path,
     Map<String, dynamic> data,
   ) {
-    final request = Options(method: 'POST').compose(
-      _dio.options,
-      path,
-      data: data,
-    );
+    final request = Options(
+      method: 'POST',
+    ).compose(_dio.options, path, data: data);
     // Keep the shared Bearer for concurrent GETs. Public auth endpoints must
     // not inherit an expired access token from the Dio defaults.
     request.headers.remove('Authorization');
@@ -170,6 +168,7 @@ class RealApiService implements IApiService {
                 : sb.toString().trim(),
             statusCode: e.response?.statusCode,
             fieldErrors: errors,
+            code: data['code'] is String ? data['code'] as String : null,
           );
         }
       }
@@ -197,10 +196,10 @@ class RealApiService implements IApiService {
   @override
   Future<AuthResponse> login(String username, String password) async {
     try {
-      final response = await _postWithoutAuthorization(
-        '/auth/mobile/login',
-        {'username': username.trim().toLowerCase(), 'password': password},
-      );
+      final response = await _postWithoutAuthorization('/auth/mobile/login', {
+        'username': username.trim().toLowerCase(),
+        'password': password,
+      });
       return AuthResponse.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
       _handleDioError(e);
@@ -210,10 +209,9 @@ class RealApiService implements IApiService {
   @override
   Future<AuthResponse> refresh(String refreshToken) async {
     try {
-      final response = await _postWithoutAuthorization(
-        '/auth/mobile/refresh',
-        {'refreshToken': refreshToken},
-      );
+      final response = await _postWithoutAuthorization('/auth/mobile/refresh', {
+        'refreshToken': refreshToken,
+      });
       if (kDebugMode) {
         debugPrint('POST /auth/mobile/refresh -> ${response.statusCode}');
       }
@@ -222,7 +220,8 @@ class RealApiService implements IApiService {
       if (kDebugMode) {
         final data = e.response?.data;
         final rawCode = data is Map<String, dynamic> ? data['code'] : null;
-        final code = rawCode is String &&
+        final code =
+            rawCode is String &&
                 RegExp(r'^[A-Z][A-Z0-9_]{0,63}$').hasMatch(rawCode)
             ? rawCode
             : 'unavailable';
@@ -253,9 +252,84 @@ class RealApiService implements IApiService {
     required String email,
     required String password,
   }) async {
-    throw UnimplementedError(
-      'Registration via RealApiService not supported yet.',
-    );
+    throw UnsupportedError('Real registration requires an email OTP.');
+  }
+
+  Future<EmailOtpIssued> _requestEmailOtp(
+    String email,
+    String purpose, {
+    String? phone,
+  }) async {
+    try {
+      final response = await _postWithoutAuthorization('/auth/mobile/otp', {
+        'email': email.trim(),
+        'phone': phone,
+        'purpose': purpose,
+      });
+      return EmailOtpIssued.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (error) {
+      _handleDioError(error);
+    }
+  }
+
+  @override
+  Future<EmailOtpIssued> requestRegistrationOtp(String email, String phone) =>
+      _requestEmailOtp(email, 'REGISTER', phone: phone.trim());
+
+  @override
+  Future<AuthResponse> registerWithEmailOtp({
+    required String fullName,
+    required String phone,
+    required String email,
+    required String otp,
+    required String password,
+  }) async {
+    try {
+      final response =
+          await _postWithoutAuthorization('/auth/mobile/register', {
+            'phone': phone.trim(),
+            'email': email.trim(),
+            'otp': otp.trim(),
+            'fullName': fullName.trim(),
+            'password': password,
+          });
+      return AuthResponse.fromJson(response.data as Map<String, dynamic>);
+    } on DioException catch (error) {
+      _handleDioError(error);
+    }
+  }
+
+  @override
+  Future<EmailOtpIssued> requestPasswordResetOtp(String email) =>
+      _requestEmailOtp(email, 'RESET_PASSWORD');
+
+  @override
+  Future<void> verifyPasswordResetOtp(String email, String otp) async {
+    try {
+      await _postWithoutAuthorization('/auth/mobile/password-reset/verify', {
+        'email': email.trim(),
+        'otp': otp.trim(),
+      });
+    } on DioException catch (error) {
+      _handleDioError(error);
+    }
+  }
+
+  @override
+  Future<void> resetPasswordWithEmailOtp({
+    required String email,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      await _postWithoutAuthorization('/auth/mobile/password-reset', {
+        'email': email.trim(),
+        'otp': otp.trim(),
+        'newPassword': newPassword,
+      });
+    } on DioException catch (error) {
+      _handleDioError(error);
+    }
   }
 
   @override

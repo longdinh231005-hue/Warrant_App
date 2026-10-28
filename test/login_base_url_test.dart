@@ -85,8 +85,9 @@ void main() {
       final usernameField = tester.widget<CustomTextField>(
         find.byType(CustomTextField).first,
       );
-      expect(usernameField.label, 'Tên đăng nhập *');
-      expect(usernameField.hintText, 'Nhập tên đăng nhập');
+      expect(usernameField.label, 'Số điện thoại / Tên đăng nhập *');
+      expect(usernameField.hintText, 'Số điện thoại hoặc tên đăng nhập');
+      expect(find.text('Quên mật khẩu?'), findsOneWidget);
       await tester.longPress(
         find.byKey(const ValueKey('debug-settings-gesture')),
       );

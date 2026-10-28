@@ -24,8 +24,14 @@ import 'package:warrant_safe/views/requests/request_list_screen.dart';
 final _request = PortalRequestDetail.fromJson({
   'code': 'YC-1',
   'status': 'PENDING_INTAKE',
+  'createdAt': '2026-10-28T09:00:00+07:00',
   'brandModel': 'Máy mẫu',
   'serialOrImei': 'SERIAL-1',
+  'categoryCode': 'LAPTOP_TABLET',
+  'deviceTypeCode': 'LAPTOP',
+  'preferredStation': 'HCM',
+  'preferredFrom': '2026-10-29T09:00:00+07:00',
+  'preferredTo': '2026-10-29T10:00:00+07:00',
   'ticketCode': null,
 });
 
@@ -131,7 +137,7 @@ class _MemoryStorage implements TokenStorage {
   }) async {}
 }
 
-class _FakeApi implements IApiService {
+class _FakeApi extends IApiService {
   @override
   Future<PortalNotificationInbox> getNotifications() async =>
       const PortalNotificationInbox([], 0);
@@ -322,6 +328,22 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    expect(find.textContaining('Gửi lúc:'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Mã nhóm thiết bị: LAPTOP_TABLET'),
+      200,
+    );
+    expect(find.text('Mã nhóm thiết bị: LAPTOP_TABLET'), findsOneWidget);
+    expect(find.text('Mã loại thiết bị: LAPTOP'), findsOneWidget);
+    expect(find.text('Mã trạm mong muốn: HCM'), findsOneWidget);
+    expect(
+      find.textContaining('Thời gian mong muốn mang máy tới (chưa xác nhận):'),
+      findsOneWidget,
+    );
+    await tester.scrollUntilVisible(
+      find.textContaining('chưa có phiếu tiếp nhận'),
+      200,
+    );
     expect(find.textContaining('chưa có phiếu tiếp nhận'), findsOneWidget);
     expect(find.text('Xem tiến độ phiếu'), findsNothing);
   });

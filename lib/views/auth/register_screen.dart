@@ -5,10 +5,11 @@ import '../../router/app_router.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../widgets/custom_text_field.dart';
+import 'real_register_screen.dart';
 
 /// WarrantSafe – Register Screen (connected to AuthViewModel)
 ///
-/// Mock-only two-step registration flow inside a PageView:
+/// Mock uses the existing two-step demo flow. Real uses the email OTP form.
 ///   Step 1 — YOUR INFO   : Full Name, Email
 ///   Step 2 — SECURITY    : Password, Confirm Password, strength rules, T&C
 class RegisterScreen extends StatefulWidget {
@@ -141,29 +142,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final isLoading = context.select<AuthViewModel, bool>((vm) => vm.isLoading);
 
     if (!context.select<AuthViewModel, bool>((vm) => vm.isMock)) {
-      return Scaffold(
-        body: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text(
-                    'Đăng ký bằng email hoặc Google hiện chưa khả dụng. Vui lòng đăng nhập bằng tài khoản đã có.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: const Text('Quay lại đăng nhập'),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      );
+      return const RealRegisterScreen();
     }
 
     return Scaffold(

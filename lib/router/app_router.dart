@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../viewmodels/auth_viewmodel.dart';
 import '../views/auth/login_screen.dart';
 import '../views/auth/register_screen.dart';
+import '../views/auth/real_forgot_password_screen.dart';
 import '../views/splash/splash_screen.dart';
 import '../views/shell/main_shell.dart';
 import '../views/home/home_screen.dart';
@@ -28,6 +29,7 @@ class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
   static const String register = '/register';
+  static const String forgotPassword = '/forgot-password';
 
   static const String home = '/home';
 
@@ -72,7 +74,9 @@ class AppRouter {
     }
 
     final isOnAuthScreen =
-        location == AppRoutes.login || location == AppRoutes.register;
+        location == AppRoutes.login ||
+        location == AppRoutes.register ||
+        location == AppRoutes.forgotPassword;
 
     // ② Not authenticated and trying to access protected route → login.
     if (!isAuth && !isOnAuthScreen) return AppRoutes.login;
@@ -100,6 +104,10 @@ class AppRouter {
     GoRoute(
       path: AppRoutes.register,
       builder: (context, state) => const RegisterScreen(),
+    ),
+    GoRoute(
+      path: AppRoutes.forgotPassword,
+      builder: (context, state) => const RealForgotPasswordScreen(),
     ),
 
     // Stateful navigation shell for authenticated tabs

@@ -163,7 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // ── Welcome text ────────────────────────────────────
                 const Text(
-                  'Đăng nhập',
+                  'Đăng nhập tài khoản',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w800,
@@ -249,8 +249,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 // ── Username field ───────────────────────────────────
                 CustomTextField(
-                  label: 'Tên đăng nhập *',
-                  hintText: 'Nhập tên đăng nhập',
+                  label: isMock
+                      ? 'Tên đăng nhập *'
+                      : 'Số điện thoại / Tên đăng nhập *',
+                  hintText: isMock
+                      ? 'Nhập tên đăng nhập'
+                      : 'Số điện thoại hoặc tên đăng nhập',
                   keyboardType: TextInputType.text,
                   controller: _emailCtrl,
                   validator: (v) {
@@ -284,7 +288,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         setState(() => _obscurePassword = !_obscurePassword),
                   ),
                 ),
-                const SizedBox(height: 8),
+                if (!isMock)
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: isLoading
+                          ? null
+                          : () => context.push(AppRoutes.forgotPassword),
+                      child: const Text('Quên mật khẩu?'),
+                    ),
+                  ),
 
                 const SizedBox(height: 28),
 
@@ -312,7 +325,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   onPressed: isLoading
                       ? null
                       : () => context.push(AppRoutes.register),
-                  child: const Text('Đăng ký tài khoản'),
+                  child: Text(
+                    isMock
+                        ? 'Đăng ký tài khoản'
+                        : 'Chưa có tài khoản bảo hành? Đăng ký ngay',
+                  ),
                 ),
                 const SizedBox(height: 16),
               ],

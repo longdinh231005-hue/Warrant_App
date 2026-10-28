@@ -24,6 +24,19 @@ class AuthResponse {
   }
 }
 
+/// Backend response from POST /auth/mobile/otp (HTTP 202).
+class EmailOtpIssued {
+  const EmailOtpIssued({required this.expiresIn, required this.resendAfter});
+
+  final int expiresIn;
+  final int resendAfter;
+
+  factory EmailOtpIssued.fromJson(Map<String, dynamic> json) => EmailOtpIssued(
+    expiresIn: (json['expiresIn'] as num).toInt(),
+    resendAfter: (json['resendAfter'] as num).toInt(),
+  );
+}
+
 class UserModel {
   const UserModel({
     required this.id,
@@ -61,7 +74,10 @@ class UserModel {
     return UserModel(
       id: json['accountId'] as String? ?? json['id'] as String? ?? '',
       customerCode: json['customerCode'] as String?,
-      fullName: json['displayName'] as String? ?? json['fullName'] as String? ?? 'N/A',
+      fullName:
+          json['displayName'] as String? ??
+          json['fullName'] as String? ??
+          'N/A',
       username: json['username'] as String? ?? json['email'] as String? ?? '',
       phone: json['phone'] as String? ?? '',
       email: json['email'] as String? ?? '',
@@ -71,14 +87,14 @@ class UserModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'fullName': fullName,
-        'username': username,
-        'phone': phone,
-        'email': email,
-        'address': address,
-        'role': role,
-      };
+    'id': id,
+    'fullName': fullName,
+    'username': username,
+    'phone': phone,
+    'email': email,
+    'address': address,
+    'role': role,
+  };
 
   UserModel copyWith({
     String? customerCode,
