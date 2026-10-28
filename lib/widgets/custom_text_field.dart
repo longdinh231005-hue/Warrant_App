@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
 
-/// A reusable text field with an uppercase label, prefix icon, and optional
-/// suffix (e.g. visibility toggle).
+/// Ô nhập liệu dùng chung: nhãn Plus Jakarta Sans nổi bật, ô nhập Inter sắc nét,
+/// bo góc 12px theo chuẩn Soopi mobile.
 class CustomTextField extends StatelessWidget {
   const CustomTextField({
     super.key,
@@ -15,6 +16,7 @@ class CustomTextField extends StatelessWidget {
     this.controller,
     this.validator,
     this.onChanged,
+    this.maxLines = 1,
   });
 
   final String label;
@@ -26,6 +28,7 @@ class CustomTextField extends StatelessWidget {
   final TextEditingController? controller;
   final String? Function(String?)? validator;
   final ValueChanged<String>? onChanged;
+  final int maxLines;
 
   @override
   Widget build(BuildContext context) {
@@ -36,21 +39,25 @@ class CustomTextField extends StatelessWidget {
         RichText(
           text: TextSpan(
             text: label.replaceAll(' *', '').replaceAll('*', ''),
-            style: const TextStyle(
-              fontSize: 14,
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 13.5,
               fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+              color: AppColors.navyBody,
+              letterSpacing: 0.1,
             ),
             children: [
               if (label.endsWith('*'))
                 const TextSpan(
                   text: ' *',
-                  style: TextStyle(color: AppColors.error),
+                  style: TextStyle(
+                    color: AppColors.error,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
             ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
 
         // ── Input ───────────────────────────────────────────────────
         TextFormField(
@@ -59,17 +66,18 @@ class CustomTextField extends StatelessWidget {
           keyboardType: keyboardType,
           validator: validator,
           onChanged: onChanged,
-          style: const TextStyle(
+          maxLines: maxLines,
+          style: GoogleFonts.inter(
             fontSize: 15,
             fontWeight: FontWeight.w500,
-            color: AppColors.textPrimary,
+            color: AppColors.penguinNavy,
           ),
           decoration: InputDecoration(
             hintText: hintText,
             prefixIcon: prefixIcon != null
                 ? Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 12),
-                    child: Icon(prefixIcon, size: 20, color: AppColors.textHint),
+                    padding: const EdgeInsets.only(left: 14, right: 10),
+                    child: Icon(prefixIcon, size: 20, color: AppColors.sageMuted),
                   )
                 : null,
             prefixIconConstraints: const BoxConstraints(
@@ -83,3 +91,4 @@ class CustomTextField extends StatelessWidget {
     );
   }
 }
+

@@ -9,6 +9,7 @@ import '../../viewmodels/auth_viewmodel.dart';
 import '../../viewmodels/request_viewmodel.dart';
 import '../../viewmodels/ticket_viewmodel.dart';
 import '../../widgets/app_bar_widget.dart';
+import '../../widgets/soopi_ui.dart';
 
 class RealTicketDetailScreen extends StatefulWidget {
   const RealTicketDetailScreen({super.key, required this.code});
@@ -163,16 +164,17 @@ class _RealTicketDetailScreenState extends State<RealTicketDetailScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
                 ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        OutlinedButton(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SoopiAlert(
+                        tone: StatusTone.danger,
+                        message: Text(_error!),
+                        action: SoopiSecondaryButton(
+                          compact: true,
+                          label: 'Thử lại',
                           onPressed: _load,
-                          child: const Text('Thử lại'),
                         ),
-                      ],
+                      ),
                     ),
                   )
                 : _details(_ticket!),
@@ -185,183 +187,430 @@ class _RealTicketDetailScreenState extends State<RealTicketDetailScreen> {
   Widget _details(PortalTicketDetail ticket) => RefreshIndicator(
     onRefresh: _load,
     child: ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
-        _card([
-          Text(
-            ticket.code,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryBlue,
-            ),
+        // ── Đầu phiếu (ticket-hero-card) ────────────────────────────
+        SoopiPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _deviceTitle(ticket),
+                style: AppText.pageTitle.copyWith(fontSize: 22),
+              ),
+              const SizedBox(height: 10),
+              Text.rich(
+                TextSpan(
+                  children: [
+                    const TextSpan(text: 'Mã phiếu: '),
+                    TextSpan(text: ticket.code, style: AppText.mono),
+                  ],
+                ),
+                style: AppText.cardDesc,
+              ),
+              if (ticket.serialOrImei?.isNotEmpty == true)
+                Text.rich(
+                  TextSpan(
+                    children: [
+                      const TextSpan(text: 'Serial/IMEI: '),
+                      TextSpan(text: ticket.serialOrImei, style: AppText.mono),
+                    ],
+                  ),
+                  style: AppText.cardDesc,
+                ),
+              const SizedBox(height: 12),
+              StatusBadge(
+                label:
+                    'Trạng thái phiếu: ${portalTicketStatusLabel(ticket.status)}',
+                tone: ticketStatusTone(ticket.status),
+              ),
+              if (ticket.stopped) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Phiếu đã dừng theo trạng thái trên hệ thống.',
+                  style: AppText.cardDesc,
+                ),
+              ],
+            ],
           ),
-          const SizedBox(height: 8),
-          Text('Trạng thái phiếu: ${portalTicketStatusLabel(ticket.status)}'),
-          if (ticket.stopped)
-            const Text('Phiếu đã dừng theo trạng thái trên hệ thống.'),
-          Text('Tiếp nhận lúc: ${_dateTime(ticket.receivedAt)}'),
-          if (ticket.promisedReturnAt != null)
-            Text('Thời gian hẹn trả: ${_dateTime(ticket.promisedReturnAt!)}'),
-          if (ticket.handedOverAt != null)
-            Text('Bàn giao lúc: ${_dateTime(ticket.handedOverAt!)}'),
-        ]),
+        ),
         if (_decisionMessage != null) ...[
           const SizedBox(height: 12),
-          Text(
-            _decisionMessage!,
-            style: const TextStyle(fontWeight: FontWeight.w600),
+          SoopiAlert(
+            tone: _decisionUncertain ? StatusTone.warning : StatusTone.success,
+            message: Text(_decisionMessage!),
+            action: _decisionUncertain
+                ? SoopiSecondaryButton(
+                    compact: true,
+                    label: 'Tải lại phiếu',
+                    onPressed: _load,
+                  )
+                : null,
           ),
-          if (_decisionUncertain)
-            OutlinedButton(
-              onPressed: _load,
-              child: const Text('Tải lại phiếu'),
-            ),
         ],
-        const SizedBox(height: 16),
-        _card([
-          const Text('Thiết bị', style: TextStyle(fontWeight: FontWeight.w700)),
-          if (ticket.productName?.isNotEmpty == true) Text(ticket.productName!),
-          if (ticket.brandName?.isNotEmpty == true)
-            Text('Hãng: ${ticket.brandName}'),
-          if (ticket.serialOrImei?.isNotEmpty == true)
-            Text('Serial/IMEI: ${ticket.serialOrImei}'),
-        ]),
-        const SizedBox(height: 16),
-        _card([
-          const Text(
-            'Các bước xử lý',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            'Tiến độ tổng hợp do hệ thống trả về, không phải nhật ký từng công đoạn.',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 8),
-          if (ticket.stopped)
-            const Text(
-              'Phiếu đã dừng xử lý; hiện không có bước sửa chữa đang thực hiện.',
-            )
-          else
-            for (final step in ticket.steps)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4),
-                child: Text('${_stepState(step.state)} · ${step.label}'),
-              ),
-        ]),
-        const SizedBox(height: 16),
-        _card([
-          const Text(
-            'Chi phí theo hệ thống',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Giá trị bảo hành miễn phí: ${_money(ticket.costs.inWarrantyAmount)}',
-          ),
-          Text(
-            'Linh kiện tính phí: ${_money(ticket.costs.outOfWarrantyParts)}',
-          ),
-          Text('Phí dịch vụ: ${_money(ticket.costs.serviceFee)}'),
-          Text('VAT: ${_money(ticket.costs.vat)}'),
-          Text('Tổng đã ghi nhận: ${_money(ticket.costs.total)}'),
-          Text('Thanh toán: ${_paymentStatus(ticket.costs.paymentStatus)}'),
-        ]),
+
+        // ── Báo giá chờ khách quyết định (quote-card) ───────────────
         if (ticket.pendingQuotation case final quote?) ...[
           const SizedBox(height: 16),
-          _card([
-            const Text(
-              'Báo giá chờ khách quyết định',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 8),
-            Text('Mã báo giá: ${quote.code}'),
-            if (quote.validUntil != null)
-              Text('Hiệu lực đến: ${_date(quote.validUntil!)}'),
-            for (final line in quote.lines) ...[
-              const SizedBox(height: 8),
-              Text(
-                '${line.lineNo}. ${line.description ?? 'Hạng mục'} · SL ${line.quantity}',
-              ),
-              if (line.unitPrice != null)
-                Text('Đơn giá: ${_money(line.unitPrice!)}'),
-              if (line.laborFee != null)
-                Text('Công: ${_money(line.laborFee!)}'),
-              if (line.lineTotal != null)
-                Text('Thành tiền: ${_money(line.lineTotal!)}'),
-            ],
-            const Divider(),
-            Text('Linh kiện: ${_money(quote.partsTotal)}'),
-            Text('Tiền công: ${_money(quote.laborTotal)}'),
-            Text(
-              'VAT (${quote.vatRate}%): ${_money(quote.grandTotal - quote.partsTotal - quote.laborTotal)}',
-            ),
-            Text('Tổng báo giá: ${_money(quote.grandTotal)}'),
-            const SizedBox(height: 8),
-            const Text(
-              'Báo giá đã duyệt nội bộ và đang chờ quyết định của khách hàng.',
-            ),
-            const SizedBox(height: 12),
-            Row(
+          SoopiPanel(
+            borderColor: AppColors.honeyBorder,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(
-                  child: OutlinedButton(
-                    onPressed: _deciding || _decisionUncertain
-                        ? null
-                        : () => _decide('DECLINE'),
-                    child: const Text('Từ chối'),
+                PanelHeading(
+                  title: 'Báo giá chờ khách quyết định',
+                  description: quote.validUntil != null
+                      ? 'Hiệu lực đến: ${_date(quote.validUntil!)}'
+                      : null,
+                  trailing: const StatusBadge(
+                    label: 'Chờ bạn xác nhận',
+                    tone: StatusTone.warning,
                   ),
                 ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _deciding || _decisionUncertain
-                        ? null
-                        : () => _decide('ACCEPT'),
-                    child: _deciding
-                        ? const SizedBox(
-                            width: 18,
-                            height: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Đồng ý'),
+                Text('Mã báo giá: ${quote.code}', style: AppText.mono),
+                for (final line in quote.lines)
+                  Container(
+                    margin: const EdgeInsets.only(top: 10),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.milkCream,
+                      borderRadius: BorderRadius.circular(AppRadius.control),
+                      border: Border.all(color: AppColors.sageDivider),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${line.lineNo}. ${line.description ?? 'Hạng mục'} · SL ${line.quantity}',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.penguinNavy,
+                          ),
+                        ),
+                        if (line.unitPrice != null)
+                          Text(
+                            'Đơn giá: ${_money(line.unitPrice!)}',
+                            style: AppText.meta,
+                          ),
+                        if (line.laborFee != null)
+                          Text(
+                            'Công: ${_money(line.laborFee!)}',
+                            style: AppText.meta,
+                          ),
+                        if (line.lineTotal != null)
+                          Text(
+                            'Thành tiền: ${_money(line.lineTotal!)}',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.penguinNavy,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
+                const SizedBox(height: 12),
+                _amountLine('Linh kiện: ${_money(quote.partsTotal)}'),
+                _amountLine('Tiền công: ${_money(quote.laborTotal)}'),
+                _amountLine(
+                  'VAT (${quote.vatRate}%): ${_money(quote.grandTotal - quote.partsTotal - quote.laborTotal)}',
+                ),
+                _amountLine(
+                  'Tổng báo giá: ${_money(quote.grandTotal)}',
+                  total: true,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Báo giá đã duyệt nội bộ và đang chờ quyết định của khách hàng.',
+                  style: AppText.cardDesc,
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: _deciding || _decisionUncertain
+                            ? null
+                            : () => _decide('DECLINE'),
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.expiredWine,
+                          side: const BorderSide(color: AppColors.peach),
+                        ),
+                        child: const Text('Từ chối'),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: _deciding || _decisionUncertain
+                            ? null
+                            : () => _decide('ACCEPT'),
+                        child: _deciding
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text('Đồng ý'),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          ]),
+          ),
         ],
+
+        // ── Tiến độ xử lý (timeline-stepper) ────────────────────────
+        const SizedBox(height: 16),
+        SoopiPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const PanelHeading(
+                title: 'Tiến độ xử lý',
+                description:
+                    'Tiến độ tổng hợp do hệ thống trả về, không phải nhật ký từng công đoạn.',
+              ),
+              if (ticket.stopped)
+                const SoopiAlert(
+                  tone: StatusTone.neutral,
+                  message: Text(
+                    'Phiếu đã dừng xử lý; hiện không có bước sửa chữa đang thực hiện.',
+                  ),
+                )
+              else
+                for (var i = 0; i < ticket.steps.length; i++)
+                  _timelineStep(
+                    ticket.steps[i],
+                    index: i,
+                    last: i == ticket.steps.length - 1,
+                  ),
+            ],
+          ),
+        ),
+
+        // ── Ghi chú từ trung tâm ────────────────────────────────────
         if (ticket.customerNotes.isNotEmpty) ...[
           const SizedBox(height: 16),
-          _card([
-            const Text(
-              'Ghi chú cho khách',
-              style: TextStyle(fontWeight: FontWeight.w700),
+          SoopiPanel(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const PanelHeading(title: 'Ghi chú cho khách'),
+                for (final note in ticket.customerNotes)
+                  Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.only(bottom: 8),
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.milkCream,
+                      borderRadius: BorderRadius.circular(AppRadius.control),
+                    ),
+                    child: Text(
+                      '${_dateTime(note.at)} · ${note.text}',
+                      style: AppText.body,
+                    ),
+                  ),
+              ],
             ),
-            for (final note in ticket.customerNotes)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Text('${_dateTime(note.at)} · ${note.text}'),
-              ),
-          ]),
+          ),
         ],
+
+        // ── Thông tin phiếu ─────────────────────────────────────────
+        const SizedBox(height: 16),
+        SoopiPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const PanelHeading(title: 'Thông tin phiếu'),
+              KvRow(
+                label: 'Ngày tiếp nhận',
+                value: _dateTime(ticket.receivedAt),
+              ),
+              KvRow(
+                label: 'Hẹn trả máy',
+                value: ticket.promisedReturnAt == null
+                    ? 'Chưa hẹn'
+                    : _dateTime(ticket.promisedReturnAt!),
+                valueColor: AppColors.forest,
+              ),
+              if (ticket.handedOverAt != null)
+                KvRow(
+                  label: 'Bàn giao lúc',
+                  value: _dateTime(ticket.handedOverAt!),
+                ),
+              if (ticket.productName?.isNotEmpty == true)
+                KvRow(label: 'Thiết bị', value: ticket.productName!),
+              if (ticket.brandName?.isNotEmpty == true)
+                KvRow(label: 'Hãng', value: ticket.brandName!),
+            ],
+          ),
+        ),
+
+        // ── Chi phí theo hệ thống ───────────────────────────────────
+        const SizedBox(height: 16),
+        SoopiPanel(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const PanelHeading(title: 'Chi phí theo hệ thống'),
+              KvRow(
+                label: 'Giá trị bảo hành miễn phí',
+                value: _money(ticket.costs.inWarrantyAmount),
+              ),
+              KvRow(
+                label: 'Linh kiện tính phí',
+                value: _money(ticket.costs.outOfWarrantyParts),
+              ),
+              KvRow(
+                label: 'Phí dịch vụ',
+                value: _money(ticket.costs.serviceFee),
+              ),
+              KvRow(label: 'VAT', value: _money(ticket.costs.vat)),
+              KvRow(
+                label: 'Thanh toán',
+                value: _paymentStatus(ticket.costs.paymentStatus),
+              ),
+              KvRow(
+                label: 'Tổng đã ghi nhận',
+                value: _money(ticket.costs.total),
+                total: true,
+              ),
+            ],
+          ),
+        ),
       ],
     ),
   );
 
-  Widget _card(List<Widget> children) => Container(
-    padding: const EdgeInsets.all(18),
+  /// Một bước trên timeline: chấm tròn (xong = xanh rừng có dấu tích, hiện tại =
+  /// mật ong, chưa tới = viền lá) nối với nhau bằng vạch dọc.
+  Widget _timelineStep(
+    PortalStep step, {
+    required int index,
+    required bool last,
+  }) {
+    final done = step.state == 'DONE';
+    final current = step.state == 'CURRENT';
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          SizedBox(
+            width: 28,
+            child: Column(
+              children: [
+                Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: done
+                        ? AppColors.forest
+                        : current
+                        ? AppColors.honeyTint
+                        : AppColors.paperWhite,
+                    border: Border.all(
+                      color: done
+                          ? AppColors.forest
+                          : current
+                          ? AppColors.honey
+                          : AppColors.sageBorder,
+                      width: current ? 2 : 1,
+                    ),
+                  ),
+                  alignment: Alignment.center,
+                  child: done
+                      ? const Icon(
+                          Icons.check_rounded,
+                          size: 15,
+                          color: AppColors.paperWhite,
+                        )
+                      : Text(
+                          '${index + 1}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: current
+                                ? AppColors.honeyText
+                                : AppColors.sageMuted,
+                          ),
+                        ),
+                ),
+                if (!last)
+                  Expanded(
+                    child: Container(
+                      width: 2,
+                      margin: const EdgeInsets.symmetric(vertical: 2),
+                      color: done ? AppColors.forest : AppColors.sageDivider,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(top: 3, bottom: last ? 0 : 16),
+              child: Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: '${_stepState(step.state)} · ',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: current
+                            ? AppColors.honeyText
+                            : AppColors.sageMuted,
+                      ),
+                    ),
+                    TextSpan(
+                      text: step.label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: current ? FontWeight.w800 : FontWeight.w600,
+                        color: AppColors.penguinNavy,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _amountLine(String text, {bool total = false}) => Container(
+    padding: const EdgeInsets.symmetric(vertical: 7),
     decoration: BoxDecoration(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.border),
+      border: total
+          ? const Border(top: BorderSide(color: AppColors.sageBorder))
+          : const Border(bottom: BorderSide(color: AppColors.sageDivider)),
     ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: children,
+    child: Text(
+      text,
+      textAlign: TextAlign.right,
+      style: TextStyle(
+        fontSize: total ? 16 : 13,
+        fontWeight: total ? FontWeight.w800 : FontWeight.w500,
+        color: total ? AppColors.forest : AppColors.navyBody,
+        fontFeatures: const [FontFeature.tabularFigures()],
+      ),
     ),
   );
+
+  String _deviceTitle(PortalTicketDetail ticket) {
+    final name = [
+      ticket.brandName,
+      ticket.productName,
+    ].whereType<String>().where((v) => v.trim().isNotEmpty).join(' ');
+    return name.isEmpty ? 'Thiết bị' : name;
+  }
 
   String _stepState(String state) => switch (state) {
     'DONE' => 'Hoàn tất',

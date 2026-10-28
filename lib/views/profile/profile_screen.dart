@@ -5,9 +5,10 @@ import '../../router/app_router.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../widgets/app_bar_widget.dart';
+import '../../widgets/soopi_ui.dart';
 import '../../data/mock_data.dart';
 
-/// WarrantSafe – Tài khoản (Profile & Settings) Screen
+/// Soopi – Tài khoản (Profile & Settings) Screen
 ///
 /// Changes from the previous version:
 ///   • Avatar initials and name/phone/email now come from [AuthViewModel.currentUser].
@@ -124,8 +125,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     _buildGroupCard([
                       _buildMenuTile(
                         icon: Icons.lock_outline_rounded,
-                        iconBgColor: const Color(0xFFFFF4E5),
-                        iconColor: AppColors.warning,
+                        iconBgColor: AppColors.honeyTint,
+                        iconColor: AppColors.honeyText,
                         title: 'Đổi mật khẩu',
                         subtitle: '(Chưa hỗ trợ trong bản thử nghiệm)',
                         onTap: () => _showUnavailable(context, 'đổi mật khẩu'),
@@ -133,8 +134,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       _divider(),
                       _buildMenuTile(
                         icon: Icons.security_rounded,
-                        iconBgColor: const Color(0xFFFFF4E5),
-                        iconColor: AppColors.warning,
+                        iconBgColor: AppColors.honeyTint,
+                        iconColor: AppColors.honeyText,
                         title: 'Xác thực hai yếu tố',
                         subtitle: '(Chưa hỗ trợ trong bản thử nghiệm)',
                         onTap: () =>
@@ -170,19 +171,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     // ── ĐĂNG XUẤT ──────────────────────────────────
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: OutlinedButton.icon(
                         onPressed: () => _confirmLogout(context),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.logout,
-                          side: const BorderSide(
-                            color: AppColors.logout,
-                            width: 1.5,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          minimumSize: const Size(double.infinity, 52),
+                          foregroundColor: AppColors.expiredWine,
+                          side: const BorderSide(color: AppColors.peach),
+                          minimumSize: const Size(double.infinity, 46),
                         ),
                         icon: const Icon(Icons.logout_rounded, size: 20),
                         label: const Text(
@@ -198,11 +193,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     // ── Footer ─────────────────────────────────────
                     Text(
-                      'WarrantSafe (Chưa có phiên bản chính thức)',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.textHint.withValues(alpha: 0.7),
-                      ),
+                      'Soopi · Bảo hành & sửa chữa (bản thử nghiệm)',
+                      style: AppText.meta.copyWith(fontSize: 11),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -229,122 +221,66 @@ class _ProfileScreenState extends State<ProfileScreen> {
         : 'Khách hàng';
     final initials = _initials(displayName);
 
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
-      ),
-      padding: const EdgeInsets.only(top: 20, bottom: 28),
-      child: Column(
-        children: [
-          // ── Avatar ────────────────────────────────────────────
-          Stack(
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      child: SoopiPanel(
+        padding: const EdgeInsets.symmetric(vertical: 22, horizontal: 16),
+        child: SizedBox(
+          width: double.infinity,
+          child: Column(
             children: [
+              // ── Avatar (chữ cái đầu trên nền xanh rừng) ───────────
               CircleAvatar(
-                radius: 44,
-                backgroundColor: AppColors.avatarBg,
+                radius: 36,
+                backgroundColor: AppColors.forest,
                 child: Text(
                   initials,
                   style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 1.5,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.paperWhite,
+                    letterSpacing: 1,
                   ),
                 ),
               ),
-              Positioned(
-                bottom: 2,
-                right: 2,
-                child: Container(
-                  width: 28,
-                  height: 28,
-                  decoration: BoxDecoration(
-                    color: AppColors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.08),
-                        blurRadius: 6,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: const Icon(
-                    Icons.camera_alt_outlined,
-                    size: 14,
-                    color: AppColors.primaryBlue,
-                  ),
-                ),
+              const SizedBox(height: 12),
+
+              // ── Name ─────────────────────────────────────────────
+              Text(
+                displayName,
+                textAlign: TextAlign.center,
+                style: AppText.cardTitle.copyWith(fontSize: 20),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
+              const SizedBox(height: 4),
 
-          // ── Name ─────────────────────────────────────────────
-          Text(
-            displayName,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-            ),
-          ),
-          const SizedBox(height: 4),
-
-          // ── Phone ────────────────────────────────────────────
-          if (phone != null && phone.isNotEmpty)
-            Text(
-              phone,
-              style: const TextStyle(
-                fontSize: 14,
-                color: AppColors.primaryBlue,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-
-          // ── Email ─────────────────────────────────────────────
-          if (email != null && email.isNotEmpty) ...[
-            const SizedBox(height: 2),
-            Text(
-              email,
-              style: const TextStyle(
-                fontSize: 13,
-                color: AppColors.textSecondary,
-              ),
-            ),
-          ],
-          const SizedBox(height: 12),
-
-          // ── Customer badge ────────────────────────────────────
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-            decoration: BoxDecoration(
-              border: Border.all(color: AppColors.border, width: 1.2),
-              borderRadius: BorderRadius.circular(24),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Icon(
-                  Icons.verified_outlined,
-                  size: 14,
-                  color: AppColors.primaryBlue,
-                ),
-                SizedBox(width: 6),
+              // ── Phone ────────────────────────────────────────────
+              if (phone != null && phone.isNotEmpty)
                 Text(
-                  'Khách hàng đã xác minh',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
+                  phone,
+                  style: AppText.mono.copyWith(color: AppColors.forest),
+                ),
+
+              // ── Email ─────────────────────────────────────────────
+              if (email != null && email.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  email,
+                  style: const TextStyle(
+                    fontSize: 13,
                     color: AppColors.textSecondary,
                   ),
                 ),
               ],
-            ),
+              const SizedBox(height: 12),
+
+              // ── Customer badge ────────────────────────────────────
+              const StatusBadge(
+                label: 'Khách hàng đã xác minh',
+                tone: StatusTone.success,
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -355,37 +291,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildSectionLabel(String text) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 4, 24, 8),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 8),
       child: Align(
         alignment: Alignment.centerLeft,
-        child: Text(
-          text,
-          style: const TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.6,
-            color: AppColors.textHint,
-          ),
-        ),
+        child: Text(text, style: AppText.label),
       ),
     );
   }
 
   Widget _buildGroupCard(List<Widget> children) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.03),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: SoopiPanel(
+        padding: EdgeInsets.zero,
         child: Column(children: children),
       ),
     );
@@ -403,18 +321,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       leading: Container(
-        width: 44,
-        height: 44,
+        width: 38,
+        height: 38,
         decoration: BoxDecoration(
           color: iconBgColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(AppRadius.control),
         ),
-        child: Icon(icon, color: iconColor, size: 22),
+        child: Icon(icon, color: iconColor, size: 20),
       ),
       title: Text(
         title,
         style: const TextStyle(
-          fontSize: 15,
+          fontSize: 14,
           fontWeight: FontWeight.w600,
           color: AppColors.textPrimary,
         ),
@@ -425,7 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       trailing:
           trailing ??
-          const Icon(Icons.chevron_right_rounded, color: AppColors.textHint),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.sageFaint),
       onTap: onTap,
     );
   }
@@ -433,7 +351,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _divider() {
     return const Padding(
       padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Divider(height: 1, thickness: 0.8, color: AppColors.divider),
+      child: Divider(height: 1, color: AppColors.divider),
     );
   }
 
@@ -449,7 +367,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           '"${_capitalize(feature)}" chưa khả dụng trong bản thử nghiệm này.',
         ),
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         duration: const Duration(seconds: 2),
       ),
     );

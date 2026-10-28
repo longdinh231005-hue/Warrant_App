@@ -69,7 +69,9 @@ class TicketDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         border: Border.all(color: AppColors.border, width: 0.8),
                       ),
                       child: Column(
@@ -94,7 +96,9 @@ class TicketDetailScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
                           color: AppColors.warning.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(
+                            AppRadius.container,
+                          ),
                           border: Border.all(
                             color: AppColors.warning.withValues(alpha: 0.5),
                             width: 1.5,
@@ -136,7 +140,9 @@ class TicketDetailScreen extends StatelessWidget {
                                 foregroundColor: AppColors.white,
                                 minimumSize: const Size(double.infinity, 44),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.control,
+                                  ),
                                 ),
                               ),
                               child: const Text(
@@ -159,7 +165,9 @@ class TicketDetailScreen extends StatelessWidget {
                         onTap: () => context.push(
                           '${AppRoutes.requests}/${request.id}/ticket/quote',
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 20,
@@ -167,7 +175,9 @@ class TicketDetailScreen extends StatelessWidget {
                           ),
                           decoration: BoxDecoration(
                             color: AppColors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.container,
+                            ),
                             border: Border.all(
                               color: AppColors.border,
                               width: 0.8,
@@ -214,7 +224,9 @@ class TicketDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         border: Border.all(color: AppColors.border, width: 0.8),
                       ),
                       child: Column(

@@ -1,7 +1,7 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../router/app_router.dart';
@@ -167,12 +167,17 @@ class _RealRegisterScreenState extends State<RealRegisterScreen> {
         );
 
   @override
+  @override
   Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.milkCream,
     appBar: AppBar(
-      title: const Text('Đăng ký'),
+      title: Text(
+        'Đăng ký tài khoản',
+        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+      ),
       leading: IconButton(
         tooltip: 'Quay lại đăng nhập',
-        icon: const Icon(Icons.arrow_back),
+        icon: const Icon(Icons.arrow_back_rounded),
         onPressed: _submitting
             ? null
             : () => context.canPop()
@@ -181,40 +186,84 @@ class _RealRegisterScreenState extends State<RealRegisterScreen> {
       ),
     ),
     body: SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const Text(
-                'Tạo tài khoản mới',
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w800),
+      child: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Container(
+              padding: const EdgeInsets.all(26),
+              decoration: BoxDecoration(
+                color: AppColors.paperWhite,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(color: AppColors.sageBorder, width: 1),
+                boxShadow: AppShadows.smoothCard,
               ),
-              const SizedBox(height: 6),
-              const Text(
-                'Đăng ký tài khoản để theo dõi và quản lý bảo hành thiết bị.',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                'Số điện thoại dùng để đăng nhập và liên hệ khi cần. Mã OTP gửi qua email, không qua SMS.',
-                style: TextStyle(color: AppColors.textSecondary),
-              ),
-              if (_message != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  _message!,
-                  key: const ValueKey('registration-message'),
-                  style: TextStyle(
-                    color: _uncertain
-                        ? AppColors.warning
-                        : AppColors.textPrimary,
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'Tạo tài khoản mới',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.penguinNavy,
+                        letterSpacing: -0.3,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Đăng ký tài khoản để theo dõi và quản lý bảo hành thiết bị.',
+                      style: GoogleFonts.inter(
+                        color: AppColors.sageMuted,
+                        fontSize: 13.5,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: AppColors.mintWash,
+                        borderRadius: BorderRadius.circular(AppRadius.control),
+                        border: Border.all(color: AppColors.mintBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline_rounded, size: 16, color: AppColors.forest),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Số điện thoại dùng để đăng nhập và liên hệ khi cần. Mã OTP gửi qua email, không qua SMS.',
+                              style: GoogleFonts.inter(fontSize: 12, color: AppColors.forestDeep),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_message != null) ...[
+                      const SizedBox(height: 14),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: _uncertain ? AppColors.honeyTint : AppColors.mintWash,
+                          borderRadius: BorderRadius.circular(AppRadius.control),
+                          border: Border.all(color: _uncertain ? AppColors.honeyBorder : AppColors.mintBorder),
+                        ),
+                        child: Text(
+                          _message!,
+                          key: const ValueKey('registration-message'),
+                          style: GoogleFonts.inter(
+                            fontSize: 13,
+                            color: _uncertain ? AppColors.honeyText : AppColors.forestDeep,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 20),
               CustomTextField(
                 label: 'Họ và tên *',
                 hintText: 'Ví dụ: Nguyễn Văn A',
@@ -345,5 +394,9 @@ class _RealRegisterScreenState extends State<RealRegisterScreen> {
         ),
       ),
     ),
-  );
+  ),
+),
+),
+);
 }
+

@@ -12,11 +12,7 @@ import 'app_status_chip.dart';
 ///
 /// Shows device icon, name, code, problem snippet, and status chip.
 class RequestCard extends StatelessWidget {
-  const RequestCard({
-    super.key,
-    required this.request,
-    this.onTap,
-  });
+  const RequestCard({super.key, required this.request, this.onTap});
 
   final MockRequest request;
   final VoidCallback? onTap;
@@ -28,7 +24,7 @@ class RequestCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(AppRadius.container),
           border: Border.all(color: AppColors.border, width: 0.8),
         ),
         padding: const EdgeInsets.all(16),
@@ -41,7 +37,7 @@ class RequestCard extends StatelessWidget {
               height: 44,
               decoration: BoxDecoration(
                 color: AppColors.cardGrey,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.control),
               ),
               child: Icon(
                 _iconForCategory(request.deviceCategory),
@@ -181,7 +177,7 @@ class ActionCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.container),
         border: Border.all(color: borderColor, width: 1),
       ),
       padding: const EdgeInsets.all(16),
@@ -230,7 +226,7 @@ class ActionCard extends StatelessWidget {
                 minimumSize: const Size(double.infinity, 44),
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.control),
                   side: buttonIsOutlined
                       ? const BorderSide(color: AppColors.border, width: 1.0)
                       : BorderSide.none,

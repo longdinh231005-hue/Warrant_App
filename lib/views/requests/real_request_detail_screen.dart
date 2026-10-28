@@ -7,6 +7,7 @@ import '../../services/i_api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../widgets/app_bar_widget.dart';
+import '../../widgets/soopi_ui.dart';
 
 class RealRequestDetailScreen extends StatefulWidget {
   const RealRequestDetailScreen({super.key, required this.code});
@@ -78,16 +79,17 @@ class _RealRequestDetailScreenState extends State<RealRequestDetailScreen> {
                 ? const Center(child: CircularProgressIndicator())
                 : _error != null
                 ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(_error!, textAlign: TextAlign.center),
-                        const SizedBox(height: 12),
-                        OutlinedButton(
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: SoopiAlert(
+                        tone: StatusTone.danger,
+                        message: Text(_error!),
+                        action: SoopiSecondaryButton(
+                          compact: true,
+                          label: 'Thử lại',
                           onPressed: _load,
-                          child: const Text('Thử lại'),
                         ),
-                      ],
+                      ),
                     ),
                   )
                 : _details(_request!),
@@ -100,35 +102,56 @@ class _RealRequestDetailScreenState extends State<RealRequestDetailScreen> {
   Widget _details(PortalRequestDetail request) => RefreshIndicator(
     onRefresh: _load,
     child: ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
       children: [
+        // ── Đầu yêu cầu: mã + trạng thái, như ticket-hero-card của web ──
         _card([
           Text(
-            request.code,
-            style: const TextStyle(
-              fontSize: 23,
-              fontWeight: FontWeight.w800,
-              color: AppColors.primaryBlue,
-            ),
+            request.brandModel?.isNotEmpty == true
+                ? request.brandModel!
+                : 'Yêu cầu bảo hành',
+            style: AppText.pageTitle.copyWith(fontSize: 22),
           ),
           const SizedBox(height: 8),
-          Text(
-            portalRequestStatusLabel(request.status),
-            style: const TextStyle(fontWeight: FontWeight.w700),
+          Text(request.code, style: AppText.mono.copyWith(fontSize: 14)),
+          const SizedBox(height: 12),
+          StatusBadge(
+            label: portalRequestStatusLabel(request.status),
+            tone: requestStatusTone(request.status),
           ),
           if (request.createdAt != null) ...[
-            const SizedBox(height: 8),
-            Text('Gửi lúc: ${_dateTime(request.createdAt!)}'),
+            const SizedBox(height: 10),
+            Text(
+              'Gửi lúc: ${_dateTime(request.createdAt!)}',
+              style: AppText.cardDesc,
+            ),
           ],
           if (request.status == 'PENDING_INTAKE') ...[
-            const SizedBox(height: 10),
-            const Text(
-              'Yêu cầu đã được ghi nhận trực tuyến. Trung tâm chưa xác nhận đã nhận thiết bị.',
+            const SizedBox(height: 12),
+            const SoopiAlert(
+              message: Text(
+                'Yêu cầu đã được ghi nhận trực tuyến. Trung tâm chưa xác nhận đã nhận thiết bị.',
+              ),
             ),
           ],
         ]),
+        // Phiếu liên kết đặt ngay dưới đầu yêu cầu: đây là việc khách cần làm tiếp.
+        if (request.ticketCode?.isNotEmpty == true) ...[
+          const SizedBox(height: 16),
+          _card([
+            const PanelHeading(title: 'Phiếu sửa chữa liên kết'),
+            _row('Mã phiếu tiếp nhận', request.ticketCode),
+            const SizedBox(height: 4),
+            ElevatedButton(
+              onPressed: () =>
+                  context.push(AppRoutes.realTicket(request.ticketCode!)),
+              child: const Text('Xem tiến độ phiếu'),
+            ),
+          ]),
+        ],
         const SizedBox(height: 16),
         _card([
+          const PanelHeading(title: 'Thông tin thiết bị'),
           _row('Thiết bị', request.brandModel),
           _row(request.identifierType ?? 'Serial/IMEI', request.serialOrImei),
           _row('Mã nhóm thiết bị', request.categoryCode),
@@ -141,28 +164,16 @@ class _RealRequestDetailScreenState extends State<RealRequestDetailScreen> {
         ]),
         const SizedBox(height: 16),
         _card([
-          const Text(
-            'Mô tả lỗi',
-            style: TextStyle(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 8),
-          Text(request.symptom ?? 'Không có nội dung'),
+          const PanelHeading(title: 'Mô tả lỗi'),
+          Text(request.symptom ?? 'Không có nội dung', style: AppText.body),
         ]),
-        if (request.ticketCode?.isNotEmpty == true) ...[
+        if (request.ticketCode?.isNotEmpty != true &&
+            request.status == 'PENDING_INTAKE') ...[
           const SizedBox(height: 16),
           _card([
-            _row('Mã phiếu tiếp nhận', request.ticketCode),
-            OutlinedButton(
-              onPressed: () =>
-                  context.push(AppRoutes.realTicket(request.ticketCode!)),
-              child: const Text('Xem tiến độ phiếu'),
-            ),
-          ]),
-        ] else if (request.status == 'PENDING_INTAKE') ...[
-          const SizedBox(height: 16),
-          _card([
-            const Text(
+            Text(
               'Yêu cầu này chưa có phiếu tiếp nhận. Theo dõi mã yêu cầu cho đến khi trung tâm xử lý.',
+              style: AppText.cardDesc,
             ),
           ]),
         ],
@@ -174,24 +185,39 @@ class _RealRequestDetailScreenState extends State<RealRequestDetailScreen> {
     ),
   );
 
-  Widget _card(List<Widget> children) => Container(
-    padding: const EdgeInsets.all(18),
-    decoration: BoxDecoration(
-      color: AppColors.white,
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: AppColors.border),
-    ),
+  Widget _card(List<Widget> children) => SoopiPanel(
     child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: children,
     ),
   );
 
   Widget _row(String label, String? value) => value == null || value.isEmpty
       ? const SizedBox.shrink()
-      : Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Text('$label: $value'),
+      : Container(
+          padding: const EdgeInsets.symmetric(vertical: 9),
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: AppColors.sageDivider)),
+          ),
+          // Một Text.rich giữ nguyên chuỗi "nhãn: giá trị" như trước.
+          child: Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '$label: ',
+                  style: const TextStyle(color: AppColors.sageMuted),
+                ),
+                TextSpan(
+                  text: value,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.penguinNavy,
+                  ),
+                ),
+              ],
+            ),
+            style: const TextStyle(fontSize: 13.5, height: 1.4),
+          ),
         );
 
   String? _preferredArrival(PortalRequestDetail request) {

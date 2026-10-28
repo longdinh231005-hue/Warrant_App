@@ -11,6 +11,7 @@ import '../../viewmodels/request_viewmodel.dart';
 import '../../viewmodels/ticket_viewmodel.dart';
 import '../../widgets/real_request_card.dart';
 import '../../models/portal_ticket_models.dart';
+import '../../widgets/soopi_ui.dart';
 
 class RequestListScreen extends StatelessWidget {
   const RequestListScreen({super.key});
@@ -59,8 +60,7 @@ class RequestListScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => context.push(AppRoutes.createRequest),
-        backgroundColor: AppColors.primaryBlue,
-        foregroundColor: AppColors.white,
+        tooltip: 'Gửi yêu cầu bảo hành mới',
         child: const Icon(Icons.add_rounded),
       ),
     );
@@ -79,103 +79,12 @@ class RequestListScreen extends StatelessWidget {
         if (context.mounted) context.read<TicketViewModel>().ensureLoaded();
       });
     }
-    return RefreshIndicator(
-      onRefresh: () async {
-        await Future.wait([requests.refresh(), tickets.refresh()]);
-      },
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
-        children: [
-          const Text(
-            'Yêu cầu trực tuyến',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 12),
-          if (requests.loading && !requests.loaded)
-            const Center(child: CircularProgressIndicator())
-          else if (requests.error != null)
-            _realFailure(requests.error!, requests.refresh)
-          else if (requests.requests.isEmpty)
-            const Text('Chưa có yêu cầu trực tuyến nào.')
-          else
-            for (final request in requests.requests)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: RealRequestCard(
-                  request: request,
-                  onTap: () => context.push(
-                    '${AppRoutes.requests}/${Uri.encodeComponent(request.code)}',
-                  ),
-                ),
-              ),
-          const SizedBox(height: 20),
-          const Text(
-            'Phiếu tiếp nhận của tôi',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Phiếu tiếp nhận thuộc những lần trung tâm đã nhận thiết bị; mã phiếu không tự suy ra từ mã yêu cầu.',
-            style: TextStyle(color: AppColors.textSecondary),
-          ),
-          const SizedBox(height: 12),
-          if (tickets.loading && !tickets.loaded)
-            const Center(child: CircularProgressIndicator())
-          else if (tickets.error != null)
-            _realFailure(tickets.error!, tickets.refresh)
-          else if (tickets.tickets.isEmpty)
-            const Text('Tài khoản chưa có phiếu tiếp nhận nào.')
-          else
-            for (final ticket in tickets.tickets)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: _ticketCard(context, ticket),
-              ),
-        ],
-      ),
-    );
+    return _RealHistory(requests: requests, tickets: tickets);
   }
-
-  Widget _realFailure(String message, VoidCallback retry) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(message),
-      const SizedBox(height: 8),
-      OutlinedButton(onPressed: retry, child: const Text('Thử lại')),
-    ],
-  );
-
-  Widget _ticketCard(BuildContext context, PortalTicketSummary ticket) =>
-      InkWell(
-        onTap: () => context.push(AppRoutes.realTicket(ticket.code)),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppColors.white,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.border),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                ticket.productName?.isNotEmpty == true
-                    ? ticket.productName!
-                    : 'Thiết bị',
-              ),
-              Text('Mã phiếu ${ticket.code}'),
-              if (ticket.serialOrImei?.isNotEmpty == true)
-                Text('Serial/IMEI: ${ticket.serialOrImei}'),
-              Text(portalTicketStatusLabel(ticket.status)),
-            ],
-          ),
-        ),
-      );
 
   Widget _buildContent() {
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 80),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       itemCount: mockRequests.length,
       itemBuilder: (context, index) {
         final request = mockRequests[index];
@@ -191,44 +100,288 @@ class RequestListScreen extends StatelessWidget {
   }
 
   Widget _buildEmptyState(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+    return const Center(
+      child: SoopiEmpty(
+        icon: Icons.assignment_outlined,
+        title: 'Chưa có yêu cầu nào',
+        text: 'Bấm dấu + góc dưới để tạo yêu cầu bảo hành/sửa chữa mới.',
+      ),
+    );
+  }
+}
+
+/// Lịch sử bảo hành & sửa chữa (Real), cùng bố cục trang "Lịch sử" của web:
+/// tiêu đề, bộ lọc theo nhóm trạng thái có đếm số, thẻ phiếu có tiến độ 6 bước,
+/// rồi danh sách yêu cầu bảo hành trực tuyến.
+class _RealHistory extends StatefulWidget {
+  const _RealHistory({required this.requests, required this.tickets});
+
+  final RequestViewModel requests;
+  final TicketViewModel tickets;
+
+  @override
+  State<_RealHistory> createState() => _RealHistoryState();
+}
+
+class _RealHistoryState extends State<_RealHistory> {
+  static const _filters = [
+    ('ALL', 'Tất cả'),
+    ('PROCESSING', 'Đang xử lý'),
+    ('WAITING', 'Chờ linh kiện / xác nhận'),
+    ('READY', 'Chờ nhận máy'),
+    ('COMPLETED', 'Hoàn thành'),
+  ];
+
+  String _group = 'ALL';
+
+  @override
+  Widget build(BuildContext context) {
+    final requests = widget.requests;
+    final tickets = widget.tickets;
+    final rows = [...tickets.tickets]
+      ..sort((a, b) => b.receivedAt.compareTo(a.receivedAt));
+    final shown = rows.where((t) => ticketInGroup(_group, t.status)).toList();
+    int count(String group) =>
+        rows.where((t) => ticketInGroup(group, t.status)).length;
+
+    return RefreshIndicator(
+      onRefresh: () async {
+        await Future.wait([requests.refresh(), tickets.refresh()]);
+      },
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 88),
         children: [
-          Container(
-            width: 72,
-            height: 72,
-            decoration: BoxDecoration(
-              color: AppColors.cardGrey,
-              borderRadius: BorderRadius.circular(20),
+          Text('Lịch sử bảo hành & sửa chữa', style: AppText.pageTitle),
+          const SizedBox(height: 4),
+          Text(
+            'Theo dõi tiến độ xử lý mọi thiết bị của bạn.',
+            style: AppText.cardDesc,
+          ),
+          const SizedBox(height: 14),
+
+          // ── Phiếu tiếp nhận ───────────────────────────────────────
+          if (tickets.loading && !tickets.loaded)
+            const Center(child: CircularProgressIndicator())
+          else if (tickets.error != null)
+            _failure(tickets.error!, tickets.refresh)
+          else if (rows.isEmpty)
+            const SoopiPanel(
+              child: SoopiEmpty(
+                icon: Icons.inbox_outlined,
+                title: 'Chưa có phiếu bảo hành',
+                text: 'Tài khoản chưa có phiếu tiếp nhận nào.',
+              ),
+            )
+          else ...[
+            SizedBox(
+              height: 38,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: _filters.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 8),
+                itemBuilder: (context, index) {
+                  final (key, label) = _filters[index];
+                  return _FilterPill(
+                    label: '$label (${count(key)})',
+                    selected: _group == key,
+                    onTap: () => setState(() => _group = key),
+                  );
+                },
+              ),
             ),
-            child: const Icon(
-              Icons.assignment_outlined,
-              size: 36,
-              color: AppColors.textHint,
+            const SizedBox(height: 16),
+            if (shown.isEmpty)
+              const SoopiPanel(
+                child: SoopiEmpty(
+                  icon: Icons.inbox_outlined,
+                  title: 'Không tìm thấy phiếu bảo hành nào',
+                  text: 'Không có phiếu nào khớp bộ lọc đang chọn.',
+                ),
+              )
+            else
+              for (final ticket in shown)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _ticketCard(context, ticket),
+                ),
+          ],
+
+          // ── Yêu cầu trực tuyến ────────────────────────────────────
+          const SizedBox(height: 12),
+          Text('Yêu cầu bảo hành trực tuyến', style: AppText.cardTitle),
+          const SizedBox(height: 10),
+          if (requests.loading && !requests.loaded)
+            const Center(child: CircularProgressIndicator())
+          else if (requests.error != null)
+            _failure(requests.error!, requests.refresh)
+          else if (requests.requests.isEmpty)
+            Text(
+              'Chưa có yêu cầu trực tuyến nào.',
+              style: AppText.cardDesc,
+            )
+          else
+            for (final request in requests.requests)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: RealRequestCard(
+                  request: request,
+                  onTap: () => context.push(
+                    '${AppRoutes.requests}/${Uri.encodeComponent(request.code)}',
+                  ),
+                ),
+              ),
+        ],
+      ),
+    );
+  }
+
+  Widget _failure(String message, VoidCallback retry) => SoopiAlert(
+    tone: StatusTone.danger,
+    message: Text(message),
+    action: SoopiSecondaryButton(
+      compact: true,
+      label: 'Thử lại',
+      onPressed: retry,
+    ),
+  );
+
+  /// Thẻ phiếu (ticket-card-box): mã + trạng thái, tên máy + Serial,
+  /// tiến độ 6 bước, chân thẻ có nút xem chi tiết.
+  Widget _ticketCard(BuildContext context, PortalTicketSummary ticket) {
+    void open() => context.push(AppRoutes.realTicket(ticket.code));
+    final step = ticket.currentStep;
+    final stepText = ticket.stopped
+        ? 'Phiếu đã dừng'
+        : step >= kCustomerStepLabels.length
+        ? 'Đã hoàn tất mọi bước'
+        : 'Bước ${step + 1}/${kCustomerStepLabels.length}: '
+              '${kCustomerStepLabels[step < 0 ? 0 : step]}';
+
+    return SoopiPanel(
+      onTap: open,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 10,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text('Mã phiếu ${ticket.code}', style: AppText.mono),
+              StatusBadge(
+                label: portalTicketStatusLabel(ticket.status),
+                tone: ticketStatusTone(ticket.status),
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1),
+          ),
+          Text(
+            ticket.productName?.isNotEmpty == true
+                ? ticket.productName!
+                : 'Thiết bị',
+            style: const TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w800,
+              color: AppColors.penguinNavy,
             ),
           ),
-          const SizedBox(height: 16),
-          const Text(
-            'Chưa có yêu cầu nào',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.textPrimary,
+          if (ticket.serialOrImei?.isNotEmpty == true) ...[
+            const SizedBox(height: 6),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: AppColors.sageDivider,
+                borderRadius: BorderRadius.circular(AppRadius.control),
+              ),
+              child: Text(
+                'Serial/IMEI: ${ticket.serialOrImei}',
+                style: AppText.mono.copyWith(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          MiniSteps(current: ticket.stopped ? -1 : step),
+          const SizedBox(height: 8),
+          Text(
+            stepText,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.navyBody,
             ),
           ),
-          const SizedBox(height: 6),
-          const Text(
-            'Bấm dấu + góc dưới để tạo yêu cầu bảo hành/sửa chữa mới.',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.textSecondary,
-              height: 1.5,
-            ),
-            textAlign: TextAlign.center,
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Divider(height: 1),
+          ),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Tiếp nhận lúc ${soopiDateTime(ticket.receivedAt)}',
+                  style: AppText.meta,
+                ),
+              ),
+              const SizedBox(width: 8),
+              SoopiPrimaryButton(
+                compact: true,
+                label: 'Xem chi tiết',
+                onPressed: open,
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Nút lọc (filter-pill): đang chọn thì nền mint dịu, chữ xanh rừng.
+class _FilterPill extends StatelessWidget {
+  const _FilterPill({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: selected ? AppColors.mintSoft : AppColors.paperWhite,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadius.container),
+        side: BorderSide(
+          color: selected ? AppColors.forest : AppColors.sageBorder,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 14),
+          child: Center(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: selected ? AppColors.forest : AppColors.sageMuted,
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

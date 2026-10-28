@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../router/app_router.dart';
 import '../../theme/app_theme.dart';
@@ -143,196 +144,249 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     return Scaffold(
+      backgroundColor: AppColors.milkCream,
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const SizedBox(height: 32),
-
-                // ── Logo & Brand ────────────────────────────────────
-                GestureDetector(
-                  key: const ValueKey('debug-settings-gesture'),
-                  onLongPress: kDebugMode ? _showDebugSettings : null,
-                  child: _buildLogo(),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: Container(
+                padding: const EdgeInsets.all(28),
+                decoration: BoxDecoration(
+                  color: AppColors.paperWhite,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: AppColors.sageBorder, width: 1),
+                  boxShadow: AppShadows.smoothCard,
                 ),
-                const SizedBox(height: 40),
-
-                // ── Welcome text ────────────────────────────────────
-                const Text(
-                  'Đăng nhập tài khoản',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: AppColors.textPrimary,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'Đăng nhập để quản lý bảo hành của bạn.',
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: AppColors.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                if (isMock)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF3F4F6),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppColors.border, width: 1.0),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          size: 20,
-                          color: AppColors.textSecondary,
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Chế độ Mock: chỉ dùng tài khoản mẫu bên dưới. Không kết nối API hoặc cơ sở dữ liệu.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                if (errorMessage != null && !hasSessionPendingRetry) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: AppColors.error.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: AppColors.error.withValues(alpha: 0.3),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // ── Logo & Brand ────────────────────────────────────
+                      GestureDetector(
+                        key: const ValueKey('debug-settings-gesture'),
+                        // Nhận nhấn giữ trên cả hàng logo, không chỉ phần ảnh.
+                        behavior: HitTestBehavior.opaque,
+                        onLongPress: kDebugMode ? _showDebugSettings : null,
+                        child: _buildLogo(),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.error_outline,
-                          color: AppColors.error,
-                          size: 20,
+                      const SizedBox(height: 28),
+
+                      // ── Welcome text ────────────────────────────────────
+                      Text(
+                        'Đăng nhập tài khoản',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 23,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.penguinNavy,
+                          letterSpacing: -0.4,
                         ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            errorMessage,
-                            style: const TextStyle(
-                              color: AppColors.error,
-                              fontSize: 13,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Quản lý yêu cầu & thiết bị bảo hành của bạn.',
+                        style: GoogleFonts.inter(
+                          fontSize: 14,
+                          color: AppColors.sageMuted,
+                          height: 1.4,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      if (isMock)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.mintWash,
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.control,
+                            ),
+                            border: Border.all(
+                              color: AppColors.mintBorder,
+                              width: 1.0,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.info_outline_rounded,
+                                size: 18,
+                                color: AppColors.forest,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Chế độ Mock: chỉ dùng tài khoản mẫu bên dưới. Nhấn giữ logo để bật/tắt kết nối API thật.',
+                                  style: GoogleFonts.inter(
+                                    fontSize: 12.5,
+                                    color: AppColors.forestDeep,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                      if (errorMessage != null && !hasSessionPendingRetry) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.expiredTint,
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.control,
+                            ),
+                            border: Border.all(
+                              color: AppColors.peach,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: AppColors.expiredWine,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  errorMessage,
+                                  style: GoogleFonts.inter(
+                                    color: AppColors.expiredWineDeep,
+                                    fontSize: 13,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 22),
+
+                      // ── Username field ───────────────────────────────────
+                      CustomTextField(
+                        label: isMock
+                            ? 'Tên đăng nhập *'
+                            : 'Số điện thoại / Tên đăng nhập *',
+                        hintText: isMock
+                            ? 'Nhập tên đăng nhập'
+                            : 'Số điện thoại hoặc tên đăng nhập',
+                        keyboardType: TextInputType.text,
+                        controller: _emailCtrl,
+                        prefixIcon: Icons.person_outline_rounded,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) {
+                            return 'Vui lòng nhập tên đăng nhập';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 18),
+
+                      // ── Password field ──────────────────────────────────
+                      CustomTextField(
+                        label: 'Mật khẩu *',
+                        hintText: 'Nhập mật khẩu',
+                        obscureText: _obscurePassword,
+                        controller: _passwordCtrl,
+                        prefixIcon: Icons.lock_outline_rounded,
+                        validator: (v) {
+                          if (v == null || v.isEmpty) {
+                            return 'Vui lòng nhập mật khẩu';
+                          }
+                          return null;
+                        },
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            _obscurePassword
+                                ? Icons.visibility_off_outlined
+                                : Icons.visibility_outlined,
+                            size: 19,
+                            color: AppColors.sageMuted,
+                          ),
+                          onPressed: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
+                          ),
+                        ),
+                      ),
+                      if (!isMock) ...[
+                        const SizedBox(height: 6),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: isLoading
+                                ? null
+                                : () => context.push(AppRoutes.forgotPassword),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                                vertical: 4,
+                              ),
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: Text(
+                              'Quên mật khẩu?',
+                              style: GoogleFonts.plusJakartaSans(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.forest,
+                              ),
                             ),
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 32),
 
-                // ── Username field ───────────────────────────────────
-                CustomTextField(
-                  label: isMock
-                      ? 'Tên đăng nhập *'
-                      : 'Số điện thoại / Tên đăng nhập *',
-                  hintText: isMock
-                      ? 'Nhập tên đăng nhập'
-                      : 'Số điện thoại hoặc tên đăng nhập',
-                  keyboardType: TextInputType.text,
-                  controller: _emailCtrl,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) {
-                      return 'Vui lòng nhập tên đăng nhập';
-                    }
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 22),
+                      const SizedBox(height: 24),
 
-                // ── Password field ──────────────────────────────────
-                CustomTextField(
-                  label: 'Mật khẩu *',
-                  hintText: 'Nhập mật khẩu',
-                  obscureText: _obscurePassword,
-                  controller: _passwordCtrl,
-                  validator: (v) {
-                    if (v == null || v.isEmpty) return 'Vui lòng nhập mật khẩu';
-                    return null;
-                  },
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                      size: 20,
-                      color: AppColors.textHint,
-                    ),
-                    onPressed: () =>
-                        setState(() => _obscurePassword = !_obscurePassword),
-                  ),
-                ),
-                if (!isMock)
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: isLoading
-                          ? null
-                          : () => context.push(AppRoutes.forgotPassword),
-                      child: const Text('Quên mật khẩu?'),
-                    ),
-                  ),
+                      // ── LOGIN button ────────────────────────────────────
+                      ElevatedButton(
+                        onPressed: isLoading ? null : _onLogin,
+                        child: isLoading
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Đăng nhập'),
+                      ),
+                      const SizedBox(height: 20),
 
-                const SizedBox(height: 28),
+                      // ── Hint for demo / testing ─────────────────────────
+                      if (isMock) ...[
+                        _buildDemoHint(),
+                        const SizedBox(height: 16),
+                      ],
 
-                // ── LOGIN button ────────────────────────────────────
-                ElevatedButton(
-                  onPressed: isLoading ? null : _onLogin,
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 22,
-                          width: 22,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
+                      TextButton(
+                        onPressed: isLoading
+                            ? null
+                            : () => context.push(AppRoutes.register),
+                        child: Text(
+                          isMock
+                              ? 'Đăng ký tài khoản'
+                              : 'Chưa có tài khoản bảo hành? Đăng ký ngay',
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w600,
                           ),
-                        )
-                      : const Text('Đăng nhập'),
-                ),
-                const SizedBox(height: 24),
-
-                // ── API Configuration ───────────────────────────────
-
-                // ── Hint for demo / testing ─────────────────────────
-                if (isMock) ...[_buildDemoHint()],
-                TextButton(
-                  onPressed: isLoading
-                      ? null
-                      : () => context.push(AppRoutes.register),
-                  child: Text(
-                    isMock
-                        ? 'Đăng ký tài khoản'
-                        : 'Chưa có tài khoản bảo hành? Đăng ký ngay',
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-              ],
+              ),
             ),
           ),
         ),
@@ -346,43 +400,48 @@ class _LoginScreenState extends State<LoginScreen> {
     return Column(
       children: [
         Container(
-          width: 64,
-          height: 64,
+          width: 58,
+          height: 58,
           decoration: BoxDecoration(
-            color: AppColors.primaryBlue,
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.forest, AppColors.forestDeep],
+            ),
             borderRadius: BorderRadius.circular(16),
+            boxShadow: AppShadows.primaryButton,
           ),
           child: const Icon(
-            Icons.verified_user_outlined,
+            Icons.verified_user_rounded,
             color: Colors.white,
-            size: 32,
+            size: 30,
           ),
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
         RichText(
-          text: const TextSpan(
-            style: TextStyle(
+          text: TextSpan(
+            style: GoogleFonts.plusJakartaSans(
               fontSize: 22,
               fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-              fontFamily: 'Roboto',
+              color: AppColors.penguinNavy,
+              letterSpacing: -0.3,
             ),
-            children: [
-              TextSpan(text: 'Warrant'),
+            children: const [
+              TextSpan(text: 'Soopi'),
               TextSpan(
                 text: 'Safe',
-                style: TextStyle(color: AppColors.primaryBlue),
+                style: TextStyle(color: AppColors.forest),
               ),
             ],
           ),
         ),
         const SizedBox(height: 4),
-        const Text(
-          'Trung tâm Bảo hành Điện tử',
-          style: TextStyle(
-            fontSize: 13,
-            color: AppColors.textSecondary,
-            letterSpacing: 0.3,
+        Text(
+          'Trung tâm Dịch vụ & Bảo hành Điện tử',
+          style: GoogleFonts.inter(
+            fontSize: 12.5,
+            color: AppColors.sageMuted,
+            letterSpacing: 0.1,
           ),
         ),
       ],
@@ -394,22 +453,47 @@ class _LoginScreenState extends State<LoginScreen> {
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: AppColors.paperWhite,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (sheetContext) => SafeArea(
         child: Padding(
           padding: EdgeInsets.only(
             bottom: MediaQuery.viewInsetsOf(sheetContext).bottom,
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text(
-                  'Cấu hình thử nghiệm',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.mintSoft,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(
+                        Icons.tune_rounded,
+                        color: AppColors.forest,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Cấu hình thử nghiệm',
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.penguinNavy,
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
                 _buildApiConfig(sheetContext),
               ],
             ),
@@ -422,41 +506,40 @@ class _LoginScreenState extends State<LoginScreen> {
   /// Small card showing demo credentials – visible during development only.
   Widget _buildDemoHint() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: AppColors.primaryLight,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.primaryBlue.withValues(alpha: 0.3)),
+        color: AppColors.mintWash,
+        borderRadius: BorderRadius.circular(AppRadius.control),
+        border: Border.all(color: AppColors.mintBorder),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Row(
+          Row(
             children: [
-              Icon(
-                Icons.info_outline_rounded,
-                size: 14,
-                color: AppColors.primaryBlue,
+              const Icon(
+                Icons.lightbulb_outline_rounded,
+                size: 15,
+                color: AppColors.forest,
               ),
-              SizedBox(width: 6),
-              // Flexible prevents overflow when container is narrow.
+              const SizedBox(width: 6),
               Flexible(
                 child: Text(
                   'Tài khoản thử nghiệm (Mock Data)',
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: GoogleFonts.plusJakartaSans(
+                    fontSize: 11.5,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primaryBlue,
-                    letterSpacing: 0.5,
+                    color: AppColors.forest,
+                    letterSpacing: 0.3,
                   ),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 8),
           _hintRow('Admin', 'admin@gmail.com', '123456'),
-          const SizedBox(height: 2),
+          const SizedBox(height: 4),
           _hintRow('User', 'user@gmail.com', 'password123'),
         ],
       ),
@@ -466,17 +549,30 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _hintRow(String role, String email, String pass) {
     return GestureDetector(
       onTap: () {
-        // Tapping the hint auto-fills the form for quick testing.
         setState(() {
           _emailCtrl.text = email;
           _passwordCtrl.text = pass;
         });
       },
-      child: Text(
-        '[$role] $email / $pass  (tap to fill)',
-        maxLines: 2,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.paperWhite,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: AppColors.mintBorder.withValues(alpha: 0.6),
+          ),
+        ),
+        child: Text(
+          '[$role] $email / $pass  (nhấn để điền)',
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.jetBrainsMono(
+            fontSize: 11.5,
+            color: AppColors.navyBody,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ),
     );
   }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../models/portal_lookup_models.dart';
 import '../../models/portal_request_models.dart';
@@ -73,9 +74,12 @@ class _RealLookupScreenState extends State<RealLookupScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppColors.background,
+    backgroundColor: AppColors.milkCream,
     appBar: AppBar(
-      title: const Text('Tra cứu bảo hành'),
+      title: Text(
+        'Tra cứu bảo hành',
+        style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+      ),
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_rounded),
         onPressed: () =>
@@ -84,62 +88,127 @@ class _RealLookupScreenState extends State<RealLookupScreen> {
     ),
     body: SafeArea(
       child: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
         children: [
-          const Text(
-            'Tra cứu yêu cầu hoặc phiếu tiếp nhận của bạn bằng mã YC/TN.',
-          ),
-          const SizedBox(height: 16),
-          Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                TextFormField(
-                  controller: _code,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: const InputDecoration(labelText: 'Mã YC hoặc TN'),
-                  validator: (value) =>
-                      RegExp(
-                        r'^(YC|TN)-[A-Z0-9]+(?:-[A-Z0-9]+)*$',
-                      ).hasMatch(value?.trim().toUpperCase() ?? '')
-                      ? null
-                      : 'Nhập đầy đủ mã YC-... hoặc TN-... (phần sau dấu gạch không được trống).',
-                ),
-              ],
+          Container(
+            padding: const EdgeInsets.all(22),
+            decoration: BoxDecoration(
+              color: AppColors.paperWhite,
+              borderRadius: BorderRadius.circular(AppRadius.card),
+              border: Border.all(color: AppColors.sageBorder, width: 1),
+              boxShadow: AppShadows.card,
+            ),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    'Tra cứu tiến độ xử lý',
+                    style: GoogleFonts.plusJakartaSans(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.penguinNavy,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Nhập mã yêu cầu (YC-...) hoặc mã phiếu tiếp nhận (TN-...) của bạn.',
+                    style: GoogleFonts.inter(
+                      fontSize: 13.5,
+                      color: AppColors.sageMuted,
+                      height: 1.4,
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+                  TextFormField(
+                    controller: _code,
+                    textCapitalization: TextCapitalization.characters,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.penguinNavy,
+                    ),
+                    decoration: InputDecoration(
+                      labelText: 'Mã YC hoặc TN *',
+                      hintText: 'Ví dụ: YC-2026-1023-00001',
+                      prefixIcon: const Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 14),
+                        child: Icon(Icons.search_rounded, color: AppColors.forest, size: 20),
+                      ),
+                      prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+                    ),
+                    validator: (value) =>
+                        RegExp(
+                          r'^(YC|TN)-[A-Z0-9]+(?:-[A-Z0-9]+)*$',
+                        ).hasMatch(value?.trim().toUpperCase() ?? '')
+                        ? null
+                        : 'Nhập đầy đủ mã YC-... hoặc TN-... (không được để trống).',
+                  ),
+                  const SizedBox(height: 20),
+                  ElevatedButton(
+                    onPressed: _loading ? null : _lookup,
+                    child: _loading
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : const Text('Tra cứu'),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _loading ? null : _lookup,
-            child: _loading
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Text('Tra cứu'),
-          ),
           if (_error != null) ...[
-            const SizedBox(height: 20),
-            Text(_error!, style: const TextStyle(color: AppColors.error)),
-            if (_canRetry)
-              TextButton.icon(
-                onPressed: _loading ? null : _lookup,
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Thử lại'),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.expiredTint,
+                borderRadius: BorderRadius.circular(AppRadius.control),
+                border: Border.all(color: AppColors.peach),
               ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: AppColors.expiredWine, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      _error!,
+                      style: GoogleFonts.inter(
+                        color: AppColors.expiredWineDeep,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                  if (_canRetry)
+                    TextButton(
+                      onPressed: _loading ? null : _lookup,
+                      child: const Text('Thử lại'),
+                    ),
+                ],
+              ),
+            ),
           ],
           if (_record case final record?) ...[
             const SizedBox(height: 20),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: record.request != null
-                      ? _requestFields(record.request!)
-                      : _ticketFields(record.ticket!),
-                ),
+            Container(
+              decoration: BoxDecoration(
+                color: AppColors.paperWhite,
+                borderRadius: BorderRadius.circular(AppRadius.card),
+                border: Border.all(color: AppColors.sageBorder, width: 1),
+                boxShadow: AppShadows.smoothCard,
+              ),
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: record.request != null
+                    ? _requestFields(record.request!)
+                    : _ticketFields(record.ticket!),
               ),
             ),
           ],
@@ -149,46 +218,200 @@ class _RealLookupScreenState extends State<RealLookupScreen> {
   );
 
   List<Widget> _requestFields(PortalRequestDetail request) => [
-    Text(
-      'Yêu cầu ${request.code}',
-      style: const TextStyle(fontWeight: FontWeight.bold),
+    Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Yêu cầu ${request.code}',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColors.penguinNavy,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.honeyTint,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(color: AppColors.honeyBorder),
+          ),
+          child: Text(
+            portalRequestStatusLabel(request.status),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.honeyText,
+            ),
+          ),
+        ),
+      ],
     ),
-    Text('Trạng thái yêu cầu: ${portalRequestStatusLabel(request.status)}'),
-    if (request.brandModel != null) Text('Thiết bị: ${request.brandModel}'),
-    if (request.serialOrImei != null)
-      Text('Serial/IMEI: ${request.serialOrImei}'),
-    if (request.ticketCode case final code?) Text('Phiếu liên kết: $code'),
+    const SizedBox(height: 12),
+    const Divider(),
+    const SizedBox(height: 12),
+    _kvRow('Mã yêu cầu', request.code, isMono: true),
+    if (request.brandModel != null) _kvRow('Thiết bị', request.brandModel!),
+    if (request.serialOrImei != null) _kvRow('Serial / IMEI', request.serialOrImei!, isMono: true),
+    if (request.ticketCode != null) _kvRow('Phiếu tiếp nhận', request.ticketCode!, isMono: true),
     if (request.ticketCode == null)
-      const Text(
-        'Chưa có phiếu tiếp nhận; gửi trực tuyến không đồng nghĩa đã nhận máy.',
+      Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.mintWash,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            'Chưa có phiếu tiếp nhận; gửi trực tuyến không đồng nghĩa đã nhận máy.',
+            style: GoogleFonts.inter(fontSize: 12, color: AppColors.forestDeep),
+          ),
+        ),
       ),
   ];
 
   List<Widget> _ticketFields(PortalTicketDetail ticket) => [
-    Text(
-      'Phiếu ${ticket.code}',
-      style: const TextStyle(fontWeight: FontWeight.bold),
+    Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          'Phiếu ${ticket.code}',
+          style: GoogleFonts.plusJakartaSans(
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            color: AppColors.penguinNavy,
+          ),
+        ),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.mintSoft,
+            borderRadius: BorderRadius.circular(AppRadius.pill),
+            border: Border.all(color: AppColors.mintBorder),
+          ),
+          child: Text(
+            portalTicketStatusLabel(ticket.status),
+            style: GoogleFonts.plusJakartaSans(
+              fontSize: 11.5,
+              fontWeight: FontWeight.w600,
+              color: AppColors.forest,
+            ),
+          ),
+        ),
+      ],
     ),
-    Text('Trạng thái phiếu: ${portalTicketStatusLabel(ticket.status)}'),
-    if (ticket.productName != null) Text('Thiết bị: ${ticket.productName}'),
-    if (ticket.serialOrImei != null)
-      Text('Serial/IMEI: ${ticket.serialOrImei}'),
+    const SizedBox(height: 12),
+    const Divider(),
+    const SizedBox(height: 12),
+    _kvRow('Mã phiếu', ticket.code, isMono: true),
+    if (ticket.productName != null) _kvRow('Thiết bị', ticket.productName!),
+    if (ticket.serialOrImei != null) _kvRow('Serial / IMEI', ticket.serialOrImei!, isMono: true),
     if (ticket.stopped)
-      const Text(
-        'Phiếu đã dừng xử lý; hiện không có bước sửa chữa đang thực hiện.',
+      Padding(
+        padding: const EdgeInsets.only(top: 8),
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: AppColors.honeyTint,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            'Phiếu đã dừng xử lý; hiện không có bước sửa chữa đang thực hiện.',
+            style: GoogleFonts.inter(fontSize: 12, color: AppColors.honeyText),
+          ),
+        ),
       )
     else
       for (final step in ticket.steps)
-        Text(
-          '${step.label}: ${step.state == 'DONE'
-              ? 'Hoàn tất'
-              : step.state == 'CURRENT'
-              ? 'Hiện tại'
-              : 'Chưa tới'}',
+        Padding(
+          padding: const EdgeInsets.only(bottom: 6),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(step.label, style: GoogleFonts.inter(fontSize: 13, color: AppColors.sageMuted)),
+              Text(
+                step.state == 'DONE'
+                    ? '✓ Hoàn tất'
+                    : step.state == 'CURRENT'
+                    ? '● Đang thực hiện'
+                    : '○ Chưa tới',
+                style: GoogleFonts.plusJakartaSans(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: step.state == 'DONE'
+                      ? AppColors.forest
+                      : step.state == 'CURRENT'
+                      ? AppColors.honeyText
+                      : AppColors.sageMuted,
+                ),
+              ),
+            ],
+          ),
         ),
-    if (ticket.pendingQuotation case final quote?)
-      Text('Báo giá chờ quyết định: ${quote.code} · ${quote.grandTotal} VNĐ'),
-    const SizedBox(height: 8),
-    const Text('Tra cứu chỉ hiển thị dữ liệu thuộc tài khoản của bạn.'),
+    if (ticket.pendingQuotation case final quote?) ...[
+      const SizedBox(height: 10),
+      Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.honeyTint,
+          borderRadius: BorderRadius.circular(AppRadius.control),
+          border: Border.all(color: AppColors.honeyBorder),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Báo giá: ${quote.code}',
+              style: GoogleFonts.jetBrainsMono(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: AppColors.honeyText,
+              ),
+            ),
+            Text(
+              '${quote.grandTotal} VNĐ',
+              style: GoogleFonts.plusJakartaSans(
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+                color: AppColors.expiredWine,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ],
   ];
+
+  Widget _kvRow(String label, String value, {bool isMono = false}) => Padding(
+    padding: const EdgeInsets.only(bottom: 8),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(fontSize: 13, color: AppColors.sageMuted),
+        ),
+        const SizedBox(width: 12),
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: isMono
+                ? GoogleFonts.jetBrainsMono(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.penguinNavy,
+                  )
+                : GoogleFonts.plusJakartaSans(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.penguinNavy,
+                  ),
+          ),
+        ),
+      ],
+    ),
+  );
 }

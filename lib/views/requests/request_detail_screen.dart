@@ -49,7 +49,9 @@ class RequestDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         border: Border.all(color: AppColors.border, width: 0.8),
                       ),
                       child: Column(
@@ -76,7 +78,9 @@ class RequestDetailScreen extends StatelessWidget {
                               padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
                                 color: AppColors.warning.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.control,
+                                ),
                               ),
                               child: const Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,7 +124,9 @@ class RequestDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         border: Border.all(color: AppColors.border, width: 0.8),
                       ),
                       child: Row(
@@ -130,7 +136,9 @@ class RequestDetailScreen extends StatelessWidget {
                             height: 48,
                             decoration: BoxDecoration(
                               color: AppColors.cardGrey,
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.control,
+                              ),
                             ),
                             child: const Icon(
                               Icons.devices_outlined,
@@ -178,7 +186,9 @@ class RequestDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: AppColors.cardGrey,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                       ),
                       child: Text(
                         request.problemDescription,
@@ -207,12 +217,16 @@ class RequestDetailScreen extends StatelessWidget {
                         onTap: () => context.push(
                           '${AppRoutes.requests}/${request.id}/ticket',
                         ),
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: AppColors.white,
-                            borderRadius: BorderRadius.circular(16),
+                            borderRadius: BorderRadius.circular(
+                              AppRadius.container,
+                            ),
                             border: Border.all(
                               color: AppColors.primaryBlue.withValues(
                                 alpha: 0.3,

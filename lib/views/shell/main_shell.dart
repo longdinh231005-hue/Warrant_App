@@ -106,12 +106,12 @@ class _WarrantSafeBottomNav extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.white,
-        border: Border(top: BorderSide(color: AppColors.border, width: 0.8)),
+        border: Border(top: BorderSide(color: AppColors.border)),
       ),
       child: SafeArea(
         top: false,
         child: SizedBox(
-          height: 60,
+          height: 64,
           child: Row(
             children: List.generate(_items.length, (index) {
               final item = _items[index];
@@ -171,28 +171,37 @@ class _NavButton extends StatelessWidget {
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(vertical: 6),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            NotificationCountBadge(
-              count: notificationBadge ? unreadCount : null,
-              loading: notificationBadge && notificationCountLoading,
-              error: notificationBadge && notificationCountError,
-              child: Icon(
-                isActive ? item.activeIcon : item.icon,
-                size: 24,
-                color: isActive ? AppColors.primaryBlue : AppColors.textHint,
+            // Mục đang chọn: nền mint dịu + chữ xanh rừng (nav-item-active của web).
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+              decoration: BoxDecoration(
+                color: isActive ? AppColors.mintSoft : Colors.transparent,
+                borderRadius: BorderRadius.circular(AppRadius.control),
+              ),
+              child: NotificationCountBadge(
+                count: notificationBadge ? unreadCount : null,
+                loading: notificationBadge && notificationCountLoading,
+                error: notificationBadge && notificationCountError,
+                child: Icon(
+                  isActive ? item.activeIcon : item.icon,
+                  size: 22,
+                  color: isActive ? AppColors.forest : AppColors.sageMuted,
+                ),
               ),
             ),
             const SizedBox(height: 3),
             Text(
               item.label,
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 11,
                 fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
-                color: isActive ? AppColors.primaryBlue : AppColors.textHint,
+                color: isActive ? AppColors.forest : AppColors.sageMuted,
               ),
               overflow: TextOverflow.ellipsis,
             ),
@@ -239,7 +248,7 @@ class PlaceholderTab extends StatelessWidget {
                   height: 72,
                   decoration: BoxDecoration(
                     color: AppColors.cardGrey,
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(AppRadius.container),
                   ),
                   child: Icon(icon, size: 36, color: AppColors.textHint),
                 ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/soopi_ui.dart';
 
 /// Displayed while [AuthViewModel.tryAutoLogin] is in progress.
 /// GoRouter shows this route at `/` and redirects away once loading is done.
@@ -9,70 +10,62 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.white,
-      body: Center(
+      backgroundColor: AppColors.milkCream,
+      body: Container(
+        width: double.infinity,
+        // Nền mint dịu → kem sữa như hero trang khách trên web.
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [AppColors.mintSoft, AppColors.milkCream],
+          ),
+        ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // App icon
             Container(
-              width: 80,
-              height: 80,
               decoration: BoxDecoration(
-                color: AppColors.primaryBlue,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryBlue.withValues(alpha: 0.3),
-                    blurRadius: 24,
-                    offset: const Offset(0, 8),
+                borderRadius: BorderRadius.circular(AppRadius.container),
+                boxShadow: AppShadows.hero,
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(AppRadius.container),
+                child: Image.asset(
+                  'assets/brand/logo-mark.png',
+                  width: 88,
+                  height: 88,
+                  errorBuilder: (_, _, _) => Container(
+                    width: 88,
+                    height: 88,
+                    color: AppColors.forest,
+                    child: const Icon(
+                      Icons.verified_user_outlined,
+                      color: AppColors.paperWhite,
+                      size: 40,
+                    ),
                   ),
-                ],
-              ),
-              child: const Icon(
-                Icons.verified_user_outlined,
-                color: Colors.white,
-                size: 40,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Brand name
-            RichText(
-              text: const TextSpan(
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                  fontFamily: 'Roboto',
                 ),
-                children: [
-                  TextSpan(text: 'Warrant'),
-                  TextSpan(
-                    text: 'Safe',
-                    style: TextStyle(color: AppColors.primaryBlue),
-                  ),
-                ],
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 22),
+            const SoopiBrand(showMark: false, wordmarkHeight: 30),
+            const SizedBox(height: 10),
             const Text(
-              'Trung tâm Bảo hành Điện tử',
+              'Tra cứu & quản lý bảo hành sản phẩm',
               style: TextStyle(
                 fontSize: 14,
-                color: AppColors.textSecondary,
-                letterSpacing: 0.3,
+                color: AppColors.sageMuted,
+                letterSpacing: 0.2,
               ),
             ),
-            const SizedBox(height: 48),
-
-            // Loading indicator
+            const SizedBox(height: 44),
             const SizedBox(
               width: 28,
               height: 28,
               child: CircularProgressIndicator(
                 strokeWidth: 2.5,
-                color: AppColors.primaryBlue,
+                color: AppColors.forest,
               ),
             ),
           ],

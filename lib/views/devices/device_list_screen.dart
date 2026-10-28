@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../data/mock_data.dart';
 import '../../theme/app_theme.dart';
 import '../../widgets/app_bar_widget.dart';
@@ -72,49 +73,56 @@ class _DeviceListScreenState extends State<DeviceListScreen> {
 
             // Tra cứu CTA
             Container(
-              color: AppColors.white,
+              color: AppColors.milkCream,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: InkWell(
                 onTap: () => context.push(AppRoutes.lookup),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.control),
                 child: Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),
                   decoration: BoxDecoration(
-                    color: AppColors.inputFill,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.border, width: 1),
+                    color: AppColors.paperWhite,
+                    borderRadius: BorderRadius.circular(AppRadius.control),
+                    border: Border.all(color: AppColors.sageBorder, width: 1),
+                    boxShadow: AppShadows.card,
                   ),
                   child: Row(
                     children: [
-                      const Icon(
-                        Icons.search_rounded,
-                        color: AppColors.textHint,
-                        size: 20,
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: AppColors.mintSoft,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.search_rounded,
+                          color: AppColors.forest,
+                          size: 18,
+                        ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
                           isMock
-                              ? 'Tra cứu thiết bị qua Serial/IMEI'
-                              : 'Tra cứu yêu cầu/phiếu bằng mã',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 14,
+                              ? 'Tra cứu thiết bị qua Serial / IMEI…'
+                              : 'Tra cứu yêu cầu / phiếu bằng mã…',
+                          style: GoogleFonts.inter(
+                            color: AppColors.sageMuted,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ),
-                      if (isMock)
-                        Icon(
-                          Icons.qr_code_scanner_rounded,
-                          color: AppColors.primaryBlue.withValues(alpha: 0.7),
-                          size: 20,
-                        ),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        color: AppColors.sageMuted.withValues(alpha: 0.6),
+                        size: 14,
+                      ),
                     ],
                   ),
                 ),
               ),
             ),
-            const Divider(height: 1),
 
             Expanded(
               child: _isLoading
@@ -261,15 +269,15 @@ class _DeviceCard extends StatelessWidget {
     final warrantyText = device.warrantyExpiryDate == null
         ? 'Chưa có ngày bảo hành Mock'
         : 'Hạn bảo hành mẫu: ${device.warrantyExpiryDate!.toIso8601String().substring(0, 10)}';
-    const warrantyColor = AppColors.textSecondary;
 
     return GestureDetector(
       onTap: () => context.push('${AppRoutes.devices}/detail', extra: device),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border, width: 0.8),
+          color: AppColors.paperWhite,
+          borderRadius: BorderRadius.circular(AppRadius.container),
+          border: Border.all(color: AppColors.sageBorder, width: 1),
+          boxShadow: AppShadows.card,
         ),
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -279,16 +287,16 @@ class _DeviceCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.cardGrey,
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.mintSoft,
+                borderRadius: BorderRadius.circular(AppRadius.control),
               ),
               child: Icon(
                 _iconForCategory(device.deviceCategory),
                 size: 24,
-                color: AppColors.textSecondary,
+                color: AppColors.forest,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -299,45 +307,48 @@ class _DeviceCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           device.deviceName,
-                          style: const TextStyle(
-                            fontSize: 15,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15.5,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                            height: 1.2,
+                            color: AppColors.penguinNavy,
+                            height: 1.25,
                           ),
                         ),
                       ),
-                      const Icon(
-                        Icons.chevron_right_rounded,
-                        size: 20,
-                        color: AppColors.textHint,
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: AppColors.sageMuted.withValues(alpha: 0.6),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(
                     '${device.identifierType}: ${device.identifierValue}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.slateQuiet,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
+                      horizontal: 10,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: warrantyColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      color: AppColors.mintWash,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(color: AppColors.mintBorder),
                     ),
                     child: Text(
                       warrantyText,
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w600,
-                        color: warrantyColor,
+                        color: AppColors.forestDeep,
                       ),
                     ),
                   ),
@@ -377,30 +388,40 @@ class _RealDeviceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    String warrantyText = 'Không xác định';
-    Color warrantyColor = AppColors.textSecondary;
+    String warrantyText = 'Chưa xác định';
+    Color bg = AppColors.milkCream;
+    Color fg = AppColors.sageMuted;
+    Color border = AppColors.sageBorder;
 
     if (device.warrantyStatus == 'IN_WARRANTY') {
       warrantyText = 'Còn bảo hành';
       if (device.warrantyExpiresOn != null) {
         warrantyText += ' (Đến ${device.warrantyExpiresOn})';
       }
-      warrantyColor = AppColors.success;
+      bg = AppColors.mintSoft;
+      fg = AppColors.forest;
+      border = AppColors.mintBorder;
     } else if (device.warrantyStatus == 'OUT_OF_WARRANTY') {
       warrantyText = 'Hết hạn bảo hành';
-      warrantyColor = AppColors.error;
+      bg = AppColors.expiredTint;
+      fg = AppColors.expiredWine;
+      border = AppColors.peach;
     } else if (device.warrantyStatus == 'NOT_ACTIVATED' ||
         device.warrantyActivatedOn == null) {
       warrantyText = 'Chưa kích hoạt bảo hành';
+      bg = AppColors.honeyTint;
+      fg = AppColors.honeyText;
+      border = AppColors.honeyBorder;
     }
 
     return GestureDetector(
       onTap: () => context.push('${AppRoutes.devices}/detail', extra: device),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.border, width: 0.8),
+          color: AppColors.paperWhite,
+          borderRadius: BorderRadius.circular(AppRadius.container),
+          border: Border.all(color: AppColors.sageBorder, width: 1),
+          boxShadow: AppShadows.card,
         ),
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -410,16 +431,16 @@ class _RealDeviceCard extends StatelessWidget {
               width: 48,
               height: 48,
               decoration: BoxDecoration(
-                color: AppColors.cardGrey,
-                borderRadius: BorderRadius.circular(12),
+                color: AppColors.mintSoft,
+                borderRadius: BorderRadius.circular(AppRadius.control),
               ),
               child: const Icon(
                 Icons.devices_outlined,
                 size: 24,
-                color: AppColors.textSecondary,
+                color: AppColors.forest,
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -430,40 +451,48 @@ class _RealDeviceCard extends StatelessWidget {
                       Expanded(
                         child: Text(
                           device.productName,
-                          style: const TextStyle(
-                            fontSize: 15,
+                          style: GoogleFonts.plusJakartaSans(
+                            fontSize: 15.5,
                             fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                            height: 1.2,
+                            color: AppColors.penguinNavy,
+                            height: 1.25,
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      Icon(
+                        Icons.arrow_forward_ios_rounded,
+                        size: 14,
+                        color: AppColors.sageMuted.withValues(alpha: 0.6),
+                      ),
                     ],
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(
                     '${device.identifierType}: ${device.serialOrImei}',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                      color: AppColors.slateQuiet,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
+                      horizontal: 10,
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: warrantyColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      color: bg,
+                      borderRadius: BorderRadius.circular(AppRadius.pill),
+                      border: Border.all(color: border),
                     ),
                     child: Text(
                       warrantyText,
-                      style: TextStyle(
-                        fontSize: 12,
+                      style: GoogleFonts.plusJakartaSans(
+                        fontSize: 11.5,
                         fontWeight: FontWeight.w600,
-                        color: warrantyColor,
+                        color: fg,
                       ),
                     ),
                   ),
@@ -476,3 +505,4 @@ class _RealDeviceCard extends StatelessWidget {
     );
   }
 }
+

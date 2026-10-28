@@ -137,7 +137,9 @@ class _LookupScreenState extends State<LookupScreen> {
                         foregroundColor: AppColors.white,
                         minimumSize: const Size(double.infinity, 48),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(
+                            AppRadius.control,
+                          ),
                         ),
                       ),
                       child: _isSearching
@@ -252,7 +254,7 @@ class _LookupScreenState extends State<LookupScreen> {
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: AppColors.white,
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(AppRadius.container),
               border: Border.all(
                 color: AppColors.primaryBlue.withValues(alpha: 0.3),
                 width: 1.5,
@@ -309,7 +311,7 @@ class _LookupScreenState extends State<LookupScreen> {
                       foregroundColor: AppColors.primaryBlue,
                       side: const BorderSide(color: AppColors.primaryBlue),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(AppRadius.control),
                       ),
                     ),
                     child: const Text('Xem chi tiết thiết bị'),
@@ -323,7 +325,7 @@ class _LookupScreenState extends State<LookupScreen> {
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
               color: AppColors.warning.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(AppRadius.control),
             ),
             child: Row(
               children: [

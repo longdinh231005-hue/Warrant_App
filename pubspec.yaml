@@ -51,6 +51,7 @@ dependencies:
 
   # ── Fallback plain storage (still used for non-sensitive prefs) ──
   shared_preferences: ^2.3.5
+  google_fonts: ^9.0.0
 
 dev_dependencies:
   flutter_test:
@@ -73,6 +74,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  # Logo Soopi, cùng ảnh với frontend-react/public/images/brand của Web.
+  assets:
+    - assets/brand/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

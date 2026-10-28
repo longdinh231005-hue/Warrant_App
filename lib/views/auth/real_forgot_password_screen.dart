@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
 import '../../router/app_router.dart';
@@ -156,55 +157,101 @@ class _RealForgotPasswordScreenState extends State<RealForgotPasswordScreen> {
   Widget build(BuildContext context) {
     if (context.watch<AuthViewModel>().isMock) {
       return Scaffold(
-        appBar: AppBar(title: const Text('Quên mật khẩu')),
-        body: const Center(
-          child: Text('Chức năng này dùng với tài khoản Real.'),
+        backgroundColor: AppColors.milkCream,
+        appBar: AppBar(
+          title: Text(
+            'Quên mật khẩu',
+            style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+          ),
+        ),
+        body: Center(
+          child: Text(
+            'Chức năng này dùng với tài khoản Real.',
+            style: GoogleFonts.inter(color: AppColors.sageMuted),
+          ),
         ),
       );
     }
     return Scaffold(
-      appBar: AppBar(title: const Text('Quên mật khẩu')),
+      backgroundColor: AppColors.milkCream,
+      appBar: AppBar(
+        title: Text(
+          'Quên mật khẩu',
+          style: GoogleFonts.plusJakartaSans(fontWeight: FontWeight.w700),
+        ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => context.go(AppRoutes.login),
+        ),
+      ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.fromLTRB(24, 18, 24, 32),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  _step == 2
-                      ? 'Đã đổi mật khẩu'
-                      : _step == 1
-                      ? 'Đặt mật khẩu mới'
-                      : 'Lấy lại mật khẩu',
-                  style: const TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                  ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 460),
+              child: Container(
+                padding: const EdgeInsets.all(26),
+                decoration: BoxDecoration(
+                  color: AppColors.paperWhite,
+                  borderRadius: BorderRadius.circular(AppRadius.card),
+                  border: Border.all(color: AppColors.sageBorder, width: 1),
+                  boxShadow: AppShadows.smoothCard,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _step == 0
-                      ? 'Nhập email đã đăng ký để nhận mã OTP.'
-                      : _step == 1
-                      ? 'Mã email đã được xác minh. Tạo mật khẩu mới.'
-                      : 'Bạn có thể đăng nhập bằng số điện thoại và mật khẩu mới.',
-                  style: const TextStyle(color: AppColors.textSecondary),
-                ),
-                if (_message != null) ...[
-                  const SizedBox(height: 18),
-                  Text(
-                    _message!,
-                    key: const ValueKey('password-reset-message'),
-                    style: TextStyle(
-                      color: _uncertain
-                          ? AppColors.warning
-                          : AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 26),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        _step == 2
+                            ? 'Đã đổi mật khẩu'
+                            : _step == 1
+                            ? 'Đặt mật khẩu mới'
+                            : 'Lấy lại mật khẩu',
+                        style: GoogleFonts.plusJakartaSans(
+                          fontSize: 22,
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.penguinNavy,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _step == 0
+                            ? 'Nhập email đã đăng ký để nhận mã xác minh OTP.'
+                            : _step == 1
+                            ? 'Mã email đã được xác minh. Tạo mật khẩu mới.'
+                            : 'Bạn có thể đăng nhập bằng số điện thoại và mật khẩu mới.',
+                        style: GoogleFonts.inter(
+                          color: AppColors.sageMuted,
+                          fontSize: 13.5,
+                          height: 1.4,
+                        ),
+                      ),
+                      if (_message != null) ...[
+                        const SizedBox(height: 14),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: _uncertain ? AppColors.honeyTint : AppColors.mintWash,
+                            borderRadius: BorderRadius.circular(AppRadius.control),
+                            border: Border.all(
+                              color: _uncertain ? AppColors.honeyBorder : AppColors.mintBorder,
+                            ),
+                          ),
+                          child: Text(
+                            _message!,
+                            key: const ValueKey('password-reset-message'),
+                            style: GoogleFonts.inter(
+                              fontSize: 13,
+                              color: _uncertain ? AppColors.honeyText : AppColors.forestDeep,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 22),
                 if (_step == 0) ...[
                   CustomTextField(
                     label: 'Email *',
@@ -335,6 +382,9 @@ class _RealForgotPasswordScreenState extends State<RealForgotPasswordScreen> {
           ),
         ),
       ),
-    );
+    ),
+  ),
+  ),
+);
   }
 }

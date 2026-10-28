@@ -659,7 +659,7 @@ class _RealCreateRequestScreenState extends State<RealCreateRequestScreen> {
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: AppColors.white,
-      borderRadius: BorderRadius.circular(14),
+      borderRadius: BorderRadius.circular(AppRadius.control),
     ),
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,

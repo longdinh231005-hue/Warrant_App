@@ -248,7 +248,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
                           color: AppColors.success.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(
+                            AppRadius.control,
+                          ),
                           border: Border.all(
                             color: AppColors.success.withValues(alpha: 0.3),
                           ),
@@ -378,7 +380,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                   foregroundColor: AppColors.white,
                   minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.control),
                   ),
                 ),
                 child: _isSubmitting
@@ -440,7 +442,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           decoration: BoxDecoration(
             color: onChanged == null ? AppColors.cardGrey : AppColors.inputFill,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(AppRadius.control),
           ),
           child: DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -484,7 +486,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               height: 80,
               decoration: BoxDecoration(
                 color: AppColors.inputFill,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.control),
                 border: Border.all(
                   color: AppColors.border,
                   style: BorderStyle.solid,
@@ -508,7 +510,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           height: 80,
           decoration: BoxDecoration(
             color: AppColors.cardGrey,
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(AppRadius.control),
           ),
           child: const Center(
             child: Icon(
@@ -589,7 +591,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: AppColors.cardGrey,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(AppRadius.control),
                 ),
                 child: const Text(
                   'Dữ liệu này chỉ có trong bộ nhớ của chế độ Mock và sẽ mất khi ứng dụng khởi động lại. Không có yêu cầu nào được gửi tới API hoặc cơ sở dữ liệu.',
@@ -618,7 +620,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                   foregroundColor: AppColors.white,
                   minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.control),
                   ),
                 ),
                 child: const Text('VỀ TRANG CHỦ'),

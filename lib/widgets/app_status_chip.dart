@@ -6,7 +6,7 @@ import '../../theme/app_theme.dart';
 // AppStatusChip
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// A small pill-shaped status label used throughout the app.
+/// A small stamp-style status label used throughout the app (bo 8px như web).
 ///
 /// Color is never the sole indicator of status; the [label] text always conveys
 /// the state. Colors are consistent with [AppColors] semantic tokens:
@@ -14,7 +14,7 @@ import '../../theme/app_theme.dart';
 ///   • [TicketStatus.awaitingCustomerConfirmation] and quote-related → warning amber
 ///   • [TicketStatus.received] and [RequestStatus.pendingIntake] → neutral grey
 ///   • [TicketStatus.awaitingReturn] → warning; returnedUnrepaired → muted
-///   • Everything else in progress → primary blue tint
+///   • Everything else in progress → tím sương (processing)
 class AppStatusChip extends StatelessWidget {
   const AppStatusChip({
     super.key,
@@ -42,10 +42,10 @@ class AppStatusChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: chipColor,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(AppRadius.control),
       ),
       child: Text(
         label,
@@ -59,33 +59,28 @@ class AppStatusChip extends StatelessWidget {
     );
   }
 
+  // Cùng bảng tông TICKET_STATUS_CUSTOMER / WARRANTY_REQUEST_STATUS của web.
   static (Color bg, Color fg) _ticketColors(TicketStatus s) {
-    switch (s) {
-      case TicketStatus.completed:
-      case TicketStatus.delivered:
-        return (const Color(0xFFD1FAE5), AppColors.success);
-      case TicketStatus.awaitingCustomerConfirmation:
-      case TicketStatus.awaitingQuoteApproval:
-      case TicketStatus.awaitingReturn:
-        return (const Color(0xFFFEF3C7), const Color(0xFFB45309));
-      case TicketStatus.returnedUnrepaired:
-        return (AppColors.cardGrey, AppColors.textSecondary);
-      case TicketStatus.received:
-        return (const Color(0xFFF1F5F9), AppColors.textSecondary);
-      default:
-        // In-progress states: inspecting, diagnosed, awaitingParts, repairing
-        return (AppColors.primaryLight, AppColors.primaryBlue);
-    }
+    final tone = switch (s) {
+      TicketStatus.completed || TicketStatus.delivered => StatusTone.success,
+      TicketStatus.awaitingCustomerConfirmation ||
+      TicketStatus.awaitingQuoteApproval ||
+      TicketStatus.awaitingParts ||
+      TicketStatus.awaitingReturn => StatusTone.warning,
+      TicketStatus.returnedUnrepaired ||
+      TicketStatus.received => StatusTone.neutral,
+      // Đang xử lý: inspecting, diagnosed, repairing
+      _ => StatusTone.processing,
+    };
+    return (tone.background, tone.foreground);
   }
 
   static (Color bg, Color fg) _requestColors(RequestStatus s) {
-    switch (s) {
-      case RequestStatus.pendingIntake:
-        return (const Color(0xFFFEF3C7), const Color(0xFFB45309));
-      case RequestStatus.converted:
-        return (const Color(0xFFD1FAE5), AppColors.success);
-      case RequestStatus.cancelled:
-        return (AppColors.cardGrey, AppColors.textSecondary);
-    }
+    final tone = switch (s) {
+      RequestStatus.pendingIntake => StatusTone.warning,
+      RequestStatus.converted => StatusTone.success,
+      RequestStatus.cancelled => StatusTone.neutral,
+    };
+    return (tone.background, tone.foreground);
   }
 }

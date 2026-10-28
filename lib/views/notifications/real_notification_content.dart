@@ -8,6 +8,7 @@ import '../../models/portal_notification_models.dart';
 import '../../services/i_api_service.dart';
 import '../../theme/app_theme.dart';
 import '../../viewmodels/auth_viewmodel.dart';
+import '../../widgets/soopi_ui.dart';
 
 /// In-app inbox: the server owns the recipient, unread state and event code.
 /// This is refreshed on demand and periodically; it is not system push.
@@ -104,7 +105,7 @@ class _RealNotificationContentState extends State<RealNotificationContent> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+          padding: const EdgeInsets.fromLTRB(16, 0, 8, 8),
           child: Row(
             children: [
               Expanded(
@@ -112,7 +113,7 @@ class _RealNotificationContentState extends State<RealNotificationContent> {
                   inbox == null
                       ? 'Thông báo trong ứng dụng'
                       : '${inbox.unreadCount} chưa đọc · Thông báo trong ứng dụng',
-                  style: const TextStyle(color: AppColors.textSecondary),
+                  style: AppText.cardDesc,
                 ),
               ),
               IconButton(
@@ -125,17 +126,15 @@ class _RealNotificationContentState extends State<RealNotificationContent> {
         ),
         if (_error != null)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    _error!,
-                    style: const TextStyle(color: AppColors.error),
-                  ),
-                ),
-                TextButton(onPressed: _load, child: const Text('Thử lại')),
-              ],
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+            child: SoopiAlert(
+              tone: StatusTone.danger,
+              message: Text(_error!),
+              action: SoopiSecondaryButton(
+                compact: true,
+                label: 'Thử lại',
+                onPressed: _load,
+              ),
             ),
           ),
         Expanded(
@@ -147,46 +146,90 @@ class _RealNotificationContentState extends State<RealNotificationContent> {
                   onRefresh: _load,
                   child: ListView.builder(
                     physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                     itemCount: inbox.items.isEmpty ? 1 : inbox.items.length,
                     itemBuilder: (context, index) {
                       if (inbox.items.isEmpty) {
                         return const Padding(
-                          padding: EdgeInsets.only(top: 80),
-                          child: Center(
-                            child: Text(
-                              'Chưa có thông báo trong tài khoản này.',
-                            ),
+                          padding: EdgeInsets.only(top: 40),
+                          child: SoopiEmpty(
+                            icon: Icons.notifications_none_rounded,
+                            title: 'Chưa có thông báo',
+                            text: 'Chưa có thông báo trong tài khoản này.',
                           ),
                         );
                       }
                       final item = inbox.items[index];
-                      return Card(
-                        color: item.read
-                            ? AppColors.white
-                            : AppColors.primaryLight,
-                        child: ListTile(
-                          leading: Icon(
-                            item.type == 'QUOTATION_AWAITING_CUSTOMER'
-                                ? Icons.request_quote_rounded
-                                : Icons.notifications_outlined,
-                          ),
-                          title: Text(item.message),
-                          subtitle: item.createdAt == null
-                              ? null
-                              : Text('${item.createdAt!.toLocal()}'),
-                          trailing: _openingId == item.id
-                              ? const SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
+                      final quote = item.type == 'QUOTATION_AWAITING_CUSTOMER';
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: SoopiPanel(
+                          elevated: false,
+                          padding: EdgeInsets.zero,
+                          color: item.read
+                              ? AppColors.white
+                              : AppColors.mintWash,
+                          borderColor: item.read
+                              ? AppColors.border
+                              : AppColors.mintBorder,
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 4,
+                            ),
+                            leading: Container(
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: quote
+                                    ? AppColors.honeyTint
+                                    : AppColors.mintSoft,
+                                borderRadius: BorderRadius.circular(
+                                  AppRadius.control,
+                                ),
+                              ),
+                              child: Icon(
+                                quote
+                                    ? Icons.request_quote_rounded
+                                    : Icons.notifications_outlined,
+                                size: 20,
+                                color: quote
+                                    ? AppColors.honeyText
+                                    : AppColors.forest,
+                              ),
+                            ),
+                            title: Text(
+                              item.message,
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: item.read
+                                    ? FontWeight.w500
+                                    : FontWeight.w700,
+                                color: AppColors.penguinNavy,
+                              ),
+                            ),
+                            subtitle: item.createdAt == null
+                                ? null
+                                : Text(
+                                    soopiDateTime(item.createdAt!),
+                                    style: AppText.meta,
                                   ),
-                                )
-                              : item.customerPath == null
-                              ? null
-                              : const Icon(Icons.chevron_right),
-                          onTap: () => _open(item),
+                            trailing: _openingId == item.id
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : item.customerPath == null
+                                ? null
+                                : const Icon(
+                                    Icons.chevron_right,
+                                    color: AppColors.sageFaint,
+                                  ),
+                            onTap: () => _open(item),
+                          ),
                         ),
                       );
                     },

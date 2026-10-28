@@ -73,7 +73,9 @@ class DeviceDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         border: Border.all(color: AppColors.border, width: 0.8),
                       ),
                       child: Column(
@@ -83,7 +85,9 @@ class DeviceDetailScreen extends StatelessWidget {
                             height: 64,
                             decoration: BoxDecoration(
                               color: AppColors.primaryLight,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.container,
+                              ),
                             ),
                             child: const Icon(
                               Icons.devices_outlined,
@@ -109,7 +113,9 @@ class DeviceDetailScreen extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: warrantyColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.container,
+                              ),
                             ),
                             child: Text(
                               warrantyText,
@@ -138,7 +144,9 @@ class DeviceDetailScreen extends StatelessWidget {
                     Container(
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         border: Border.all(color: AppColors.border, width: 0.8),
                       ),
                       child: Column(
@@ -211,7 +219,9 @@ class DeviceDetailScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         border: Border.all(color: AppColors.border, width: 0.8),
                       ),
                       child: Column(
@@ -221,7 +231,9 @@ class DeviceDetailScreen extends StatelessWidget {
                             height: 64,
                             decoration: BoxDecoration(
                               color: AppColors.primaryLight,
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.container,
+                              ),
                             ),
                             child: Icon(
                               _iconForCategory(device.deviceCategory),
@@ -247,7 +259,9 @@ class DeviceDetailScreen extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               color: warrantyColor.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(20),
+                              borderRadius: BorderRadius.circular(
+                                AppRadius.container,
+                              ),
                             ),
                             child: Text(
                               warrantyText,
@@ -276,7 +290,9 @@ class DeviceDetailScreen extends StatelessWidget {
                     Container(
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         border: Border.all(color: AppColors.border, width: 0.8),
                       ),
                       child: Column(
@@ -323,7 +339,7 @@ class DeviceDetailScreen extends StatelessWidget {
                   foregroundColor: AppColors.white,
                   minimumSize: const Size(double.infinity, 52),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(AppRadius.control),
                   ),
                   textStyle: const TextStyle(
                     fontSize: 15,

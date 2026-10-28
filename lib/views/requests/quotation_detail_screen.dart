@@ -175,7 +175,9 @@ class _QuotationDetailScreenState extends State<QuotationDetailScreen> {
                                   CustomerQuoteStatus.accepted
                               ? AppColors.success.withValues(alpha: 0.1)
                               : AppColors.error.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(
+                            AppRadius.control,
+                          ),
                         ),
                         child: Row(
                           children: [
@@ -219,7 +221,9 @@ class _QuotationDetailScreenState extends State<QuotationDetailScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         color: AppColors.white,
-                        borderRadius: BorderRadius.circular(16),
+                        borderRadius: BorderRadius.circular(
+                          AppRadius.container,
+                        ),
                         border: Border.all(color: AppColors.border, width: 0.8),
                       ),
                       child: Column(
@@ -365,7 +369,9 @@ class _QuotationDetailScreenState extends State<QuotationDetailScreen> {
                                 side: const BorderSide(color: AppColors.error),
                                 minimumSize: const Size(double.infinity, 52),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.control,
+                                  ),
                                 ),
                               ),
                               child: const Text(
@@ -384,7 +390,9 @@ class _QuotationDetailScreenState extends State<QuotationDetailScreen> {
                                 foregroundColor: AppColors.white,
                                 minimumSize: const Size(double.infinity, 52),
                                 shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                                  borderRadius: BorderRadius.circular(
+                                    AppRadius.control,
+                                  ),
                                 ),
                               ),
                               child: const Text(

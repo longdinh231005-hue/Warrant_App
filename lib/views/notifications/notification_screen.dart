@@ -4,6 +4,7 @@ import '../../data/mock_data.dart';
 import '../../theme/app_theme.dart';
 import '../../router/app_router.dart';
 import '../../widgets/app_bar_widget.dart';
+import '../../widgets/soopi_ui.dart';
 import 'package:provider/provider.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import 'real_notification_content.dart';
@@ -27,42 +28,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             const WarrantSafeAppBar(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.go(AppRoutes.home),
-                    child: Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: AppColors.border, width: 1),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios_new_rounded,
-                        size: 18,
-                        color: AppColors.textPrimary,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Text(
-                    'Thông báo',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                ],
-              ),
+            WarrantSafeTitleRow(
+              title: 'Thông báo',
+              onBackTap: () => context.go(AppRoutes.home),
             ),
             if (isMock && mockNotifications.isNotEmpty)
               Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
                 child: Row(
                   children: [
                     Text(
@@ -93,7 +65,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                       child: const Text(
                         'Đánh dấu đã đọc',
                         style: TextStyle(
-                          color: AppColors.primaryBlue,
+                          color: AppColors.forest,
                           fontWeight: FontWeight.w600,
                           fontSize: 14,
                         ),
@@ -125,7 +97,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   : (mockNotifications.isEmpty
                         ? _buildEmptyState()
                         : ListView.builder(
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
+                            padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
                             itemCount: mockNotifications.length,
                             itemBuilder: (context, index) {
                               final notif = mockNotifications[index];
@@ -140,46 +112,11 @@ class _NotificationScreenState extends State<NotificationScreen> {
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: AppColors.cardGrey,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Icon(
-                Icons.notifications_off_outlined,
-                size: 36,
-                color: AppColors.textHint,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Không có thông báo mới',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'Các thông báo về tiến trình sửa chữa sẽ xuất hiện ở đây.',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.textSecondary,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+    return const Center(
+      child: SoopiEmpty(
+        icon: Icons.notifications_off_outlined,
+        title: 'Không có thông báo mới',
+        text: 'Các thông báo về tiến trình sửa chữa sẽ xuất hiện ở đây.',
       ),
     );
   }
@@ -220,38 +157,35 @@ class _NotificationScreenState extends State<NotificationScreen> {
           }
         }
       },
+      borderRadius: BorderRadius.circular(AppRadius.container),
       child: Container(
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 10),
+        padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: notif.isRead
-              ? AppColors.white
-              : AppColors.primaryLight.withValues(alpha: 0.3),
-          border: const Border(
-            bottom: BorderSide(color: AppColors.border, width: 0.5),
+          color: notif.isRead ? AppColors.white : AppColors.mintWash,
+          borderRadius: BorderRadius.circular(AppRadius.container),
+          border: Border.all(
+            color: notif.isRead ? AppColors.border : AppColors.mintBorder,
           ),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: const EdgeInsets.all(10),
+              padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: notif.isRead
-                    ? AppColors.cardGrey
-                    : AppColors.primaryLight,
-                shape: BoxShape.circle,
+                color: notif.isRead ? AppColors.cardGrey : AppColors.mintSoft,
+                borderRadius: BorderRadius.circular(AppRadius.control),
               ),
               child: Icon(
                 notif.title.toLowerCase().contains('báo giá')
                     ? Icons.request_quote_rounded
                     : Icons.info_rounded,
-                color: notif.isRead
-                    ? AppColors.textHint
-                    : AppColors.primaryBlue,
+                color: notif.isRead ? AppColors.textHint : AppColors.forest,
                 size: 20,
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,7 +209,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                           width: 8,
                           height: 8,
                           decoration: const BoxDecoration(
-                            color: AppColors.primaryBlue,
+                            color: AppColors.forest,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -293,13 +227,7 @@ class _NotificationScreenState extends State<NotificationScreen> {
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    _formatTimeAgo(notif.createdAt),
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textHint,
-                    ),
-                  ),
+                  Text(_formatTimeAgo(notif.createdAt), style: AppText.meta),
                 ],
               ),
             ),

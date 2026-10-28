@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'notification_count_badge.dart';
+import 'soopi_ui.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WarrantSafeAppBar
@@ -8,7 +9,7 @@ import 'notification_count_badge.dart';
 
 /// Consistent top app bar used across authenticated screens.
 ///
-/// Shows the WarrantSafe logo on the left and a notification bell with optional
+/// Shows the Soopi logo on the left (giống header trang khách trên web) and a notification bell with optional
 /// badge on the right.
 ///
 /// The bell is shown only when its parent supplies a destination.
@@ -30,7 +31,7 @@ class WarrantSafeAppBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: AppColors.white,
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
       child: Row(
         children: [
           // ── Logo ────────────────────────────────────────────────
@@ -50,8 +51,9 @@ class WarrantSafeAppBar extends StatelessWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: AppColors.inputFill,
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(AppRadius.control),
+                    border: Border.all(color: AppColors.border),
                   ),
                   child: const Icon(
                     Icons.notifications_none_rounded,
@@ -66,44 +68,7 @@ class WarrantSafeAppBar extends StatelessWidget {
     );
   }
 
-  Widget _buildLogo() {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 32,
-          height: 32,
-          decoration: BoxDecoration(
-            color: AppColors.primaryBlue,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: const Icon(
-            Icons.verified_user_outlined,
-            color: Colors.white,
-            size: 16,
-          ),
-        ),
-        const SizedBox(width: 8),
-        RichText(
-          text: const TextSpan(
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w800,
-              color: AppColors.textPrimary,
-              fontFamily: 'Roboto',
-            ),
-            children: [
-              TextSpan(text: 'Warrant'),
-              TextSpan(
-                text: 'Safe',
-                style: TextStyle(color: AppColors.primaryBlue),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildLogo() => const SoopiBrand();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -129,26 +94,9 @@ class SectionHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textPrimary,
-          ),
-        ),
+        Expanded(child: Text(title, style: AppText.cardTitle)),
         if (onViewAll != null)
-          GestureDetector(
-            onTap: onViewAll,
-            child: Text(
-              viewAllLabel,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryBlue,
-              ),
-            ),
-          ),
+          SoopiLink(label: '$viewAllLabel →', onTap: onViewAll!),
       ],
     );
   }
@@ -169,7 +117,7 @@ class WarrantSafeTitleRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
       child: Row(
         children: [
           GestureDetector(
@@ -185,7 +133,7 @@ class WarrantSafeTitleRow extends StatelessWidget {
               height: 40,
               decoration: BoxDecoration(
                 color: AppColors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(AppRadius.control),
                 border: Border.all(color: AppColors.border, width: 1),
               ),
               child: const Icon(
@@ -195,16 +143,9 @@ class WarrantSafeTitleRow extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textPrimary,
-              ),
-            ),
+            child: Text(title, style: AppText.pageTitle.copyWith(fontSize: 20)),
           ),
         ],
       ),
