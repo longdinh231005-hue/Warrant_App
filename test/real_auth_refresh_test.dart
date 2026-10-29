@@ -253,6 +253,12 @@ void main() {
           expect(request.headers['Authorization'], 'Bearer old-access');
           return _json({'customerCode': 'KH-1', 'fullName': 'Khách thử'}, 200);
         }
+        if (request.uri.path.endsWith('/notifications')) {
+          // Startup primes the badge separately from the two GETs under test.
+          expect(request.method, 'GET');
+          expect(request.headers['Authorization'], 'Bearer old-access');
+          return _json({'items': [], 'unreadCount': 0}, 200);
+        }
         if (request.headers['Authorization'] == 'Bearer old-access') {
           expiredGets++;
           return _json({'type': 'AUTH_TOKEN_INVALID'}, 401);
