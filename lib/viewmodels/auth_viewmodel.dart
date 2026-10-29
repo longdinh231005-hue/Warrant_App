@@ -45,7 +45,7 @@ class AuthViewModel extends ChangeNotifier {
     const String envUrl = String.fromEnvironment('API_URL', defaultValue: '');
     String defaultUrl = envUrl.isNotEmpty
         ? envUrl
-        : (kDebugMode ? 'http://10.0.2.2:8080/api/v1' : '');
+        : (kDebugMode ? debugDefaultBaseUrl : '');
 
     if (!kDebugMode && !_isMock) {
       if (defaultUrl.isEmpty) {
@@ -172,7 +172,14 @@ class AuthViewModel extends ChangeNotifier {
   bool _isMock = true;
   bool get isMock => _isMock;
 
-  String _baseUrl = 'http://10.0.2.2:8080/api/v1';
+  /// API Soopi khi debug: bản Web gọi /api/v1 cùng origin (web_dev_config.yaml
+  /// chuyển tiếp sang localhost:8081, không vướng CORS); Android emulator gọi máy
+  /// chủ qua 10.0.2.2:8081.
+  static String get debugDefaultBaseUrl => kIsWeb
+      ? '${Uri.base.origin}/api/v1'
+      : 'http://10.0.2.2:8081/api/v1';
+
+  String _baseUrl = debugDefaultBaseUrl;
   String get baseUrl => _baseUrl;
 
   bool _isInitializing = true;
@@ -229,7 +236,7 @@ class AuthViewModel extends ChangeNotifier {
         uri.host.isEmpty ||
         uri.path != '/api/v1') {
       throw Exception(
-        'Vui lòng nhập một URL hợp lệ có chứa host và path /api/v1 (ví dụ: http://10.0.2.2:8080/api/v1).',
+        'Vui lòng nhập một URL hợp lệ có chứa host và path /api/v1 (ví dụ: http://10.0.2.2:8081/api/v1).',
       );
     }
 

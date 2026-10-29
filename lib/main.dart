@@ -69,7 +69,7 @@ class _WarrantSafeAppState extends State<WarrantSafeApp> {
         ChangeNotifierProvider<TicketViewModel>.value(value: _ticketViewModel),
       ],
       child: MaterialApp.router(
-        title: 'WarrantSafe',
+        title: 'Soopi',
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
         routerConfig: _appRouter.router,

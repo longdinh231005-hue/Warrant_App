@@ -8,7 +8,7 @@ import '../../theme/app_theme.dart';
 import '../../viewmodels/auth_viewmodel.dart';
 import '../../widgets/custom_text_field.dart';
 
-/// WarrantSafe – Login Screen (connected to AuthViewModel)
+/// Soopi – Login Screen (connected to AuthViewModel)
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -399,43 +399,31 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildLogo() {
     return Column(
       children: [
+        // Logo chim cánh cụt + chữ "soopiwarranty", cùng ảnh với header trang khách trên Web.
         Container(
-          width: 58,
-          height: 58,
+          width: 72,
+          height: 72,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.forest, AppColors.forestDeep],
-            ),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(AppRadius.container),
             boxShadow: AppShadows.primaryButton,
           ),
-          child: const Icon(
-            Icons.verified_user_rounded,
-            color: Colors.white,
-            size: 30,
-          ),
-        ),
-        const SizedBox(height: 12),
-        RichText(
-          text: TextSpan(
-            style: GoogleFonts.plusJakartaSans(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: AppColors.penguinNavy,
-              letterSpacing: -0.3,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(AppRadius.container),
+            child: Image.asset(
+              'assets/brand/logo-mark.png',
+              width: 72,
+              height: 72,
+              semanticLabel: 'Logo Soopi',
             ),
-            children: const [
-              TextSpan(text: 'Soopi'),
-              TextSpan(
-                text: 'Safe',
-                style: TextStyle(color: AppColors.forest),
-              ),
-            ],
           ),
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 14),
+        Image.asset(
+          'assets/brand/wordmark.png',
+          height: 26,
+          semanticLabel: 'soopiwarranty',
+        ),
+        const SizedBox(height: 6),
         Text(
           'Trung tâm Dịch vụ & Bảo hành Điện tử',
           style: GoogleFonts.inter(
